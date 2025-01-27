@@ -1,3 +1,4 @@
+// TODO Update with accurate permissions. Does Ptero provide a list?
 export type UserPermission =
   | 'control.restart'
   | 'control.start'

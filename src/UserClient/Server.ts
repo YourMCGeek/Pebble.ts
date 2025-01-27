@@ -4,7 +4,7 @@ import { DatabaseBuilder } from '../builder/DatabaseBuilder';
 import { ScheduleBuilder } from '../builder/ScheduleBuilder';
 import { SubUserBuilder } from '../builder/SubUserBuilder';
 import { SERVER_SIGNAL, ServerStatus } from '../types/base/serverStatus';
-import { RawAllocation, RawAllocationList } from '../types/user/allocation';
+import { RawAllocation, RawAllocationList } from '../types/user/networking';
 import { RawEgg } from '../types/user/egg';
 import { RawEggVariableList } from '../types/user/eggVariable';
 import { RawFile, RawFileList } from '../types/user/file';
@@ -15,7 +15,7 @@ import { RawServerSchedule, RawServerScheduleList } from '../types/user/serverSc
 import { RawServerSubuser, RawServerSubuserList } from '../types/user/serverSubuser';
 import { RawSignedUrl } from '../types/user/signedUrl';
 import { RawStats, StatsAttributes } from '../types/user/stats';
-import { Allocation } from './Allocation';
+import { Allocation } from './Networking';
 import { Backup } from './Backup';
 import { Database } from './Database';
 import { File } from './File';
@@ -24,6 +24,11 @@ import { ServerConsoleConnection } from './ServerConsoleConnection';
 import { SubUser } from './SubUser';
 import { UserClient } from './UserClient';
 import { Variable } from './Variable';
+
+/* FIXME
+ * Lots of missing routes, lots of extra routes
+ *
+ */
 
 let client: UserClient;
 var relationships:
@@ -64,10 +69,7 @@ export class Server implements ServerAttributes {
     readonly allocations: number;
     readonly backups: number;
   };
-  /**
-   * @deprecated Use getStatus() or getUsage() instead, as the panel will always return null as status
-   */
-  status: null;
+
   readonly is_suspended: boolean;
   readonly is_installing: boolean;
   readonly is_transferring: boolean;
@@ -92,7 +94,6 @@ export class Server implements ServerAttributes {
     this.docker_image = server.attributes.docker_image;
     this.egg_features = server.attributes.egg_features;
     this.feature_limits = server.attributes.feature_limits;
-    this.status = server.attributes.status;
     this.is_suspended = server.attributes.is_suspended;
     this.is_installing = server.attributes.is_installing;
     this.is_transferring = server.attributes.is_transferring;
@@ -103,6 +104,15 @@ export class Server implements ServerAttributes {
     if (relationships?.egg) this.egg = relationships.egg;
     if (relationships?.subusers) this.subusers = relationships.subusers.data.map((s) => new SubUser(userClient, s, this));
   }
+
+  relationships?:
+    | {
+        readonly allocations?: RawAllocationList;
+        readonly variable?: RawEggVariableList;
+        readonly egg?: RawEgg;
+        readonly subusers?: RawServerSubuserList;
+      }
+    | undefined;
 
   /**
    * Get a console socket and automatically connects to it

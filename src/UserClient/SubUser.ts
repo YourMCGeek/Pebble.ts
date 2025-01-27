@@ -3,6 +3,12 @@ import { RawServerSubuser, ServerSubuserAttributes } from '../types/user/serverS
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
+/* TODO
+ * - GET /api/client/servers/{server}/users
+ * - POST /api/client/servers/{server}/users
+ * - GET /api/client/servers/{server}/users/{user}
+ */
+
 let client: UserClient;
 export class SubUser implements ServerSubuserAttributes {
   readonly uuid: string;

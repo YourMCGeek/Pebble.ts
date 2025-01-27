@@ -18,6 +18,8 @@ import { UserClient } from './UserClient';
 
 // file deepcode ignore InsufficientPostmessageValidation
 
+// TODO check for accuracy
+
 let client: UserClient;
 export class ServerConsoleConnection {
   private endpoint: string;

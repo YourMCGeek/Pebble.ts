@@ -5,6 +5,15 @@ import { ScheduleTask } from './ScheduleTask';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
+/* TODO
+ * - GET /api/client/servers/{server}/schedules
+ * - POST /api/client/servers/{server}/schedules
+ * - GET /api/client/servers/{server}/schedules/{schedule}
+ * - Doesn't seem to be a route for getting a schedule's tasks
+ * - POST /api/client/servers/{server}/schedules/{schedule}/tasks/{task}
+ * - DELETE /api/client/servers/{server}/schedules/{schedule}/tasks/{task}
+ */
+
 let client: UserClient;
 export class Schedule implements ServerScheduleAttributes {
   readonly id: number;

@@ -39,6 +39,7 @@ export class Database implements ServerDatabaseAttributes {
    * Rotates the password for this database
    * @returns The new generated password or undefined if the user doesn't have the permission to view the password
    */
+  // TODO Look into this. Is this a route on Pebble? If so, missing documentation.
   public async rotatePassword(): Promise<string | undefined> {
     const endpoint = new URL(
       client.panel + '/api/client/servers/' + this.parentServer.identifier + '/databases/' + this.id + '/rotate-password',

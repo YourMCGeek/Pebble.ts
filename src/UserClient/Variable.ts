@@ -2,6 +2,8 @@ import { EggVariableAttributes, RawEggVariable } from '../types/user/eggVariable
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
+// TODO investigate
+
 let client: UserClient;
 export class Variable implements EggVariableAttributes {
   readonly name: string;

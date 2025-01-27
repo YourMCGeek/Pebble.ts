@@ -4,6 +4,22 @@ import { RawSignedUrl } from '../types/user/signedUrl';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
+/* TODO:
+ * - GET /api/client/servers/{server}/files/list
+ * - GET /api/client/servers/{server}/files/search
+ * - GET /api/client/servers/{server}/files/sizes
+ * - GET /api/client/servers/{server}/files/upload
+ * - Upload Stream?
+ * - POST /api/client/servers/{server}/files/create-folder
+ * - POST /api/client/servers/{server}/files/chmod
+ * - POST /api/client/servers/{server}/files/restore
+ * - GET /api/client/servers/{server}/files/pull
+ * - POST /api/client/servers/{server}/files/pull
+ * - DELETE /api/client/servers/{server}/files/pull/{id}
+ * - GET /api/client/servers/{server}/operations
+ * - DELETE /api/client/servers/{server}/operations/{operation}
+ */
+
 let client: UserClient;
 export class File implements FileAttributes {
   name: string;
@@ -15,7 +31,7 @@ export class File implements FileAttributes {
   mimetype: string;
   readonly created_at: Date;
   modified_at: Date;
-  readonly parenServer: Server;
+  readonly parentServer: Server;
   readonly dir: string = '/';
 
   constructor(userClient: UserClient, fileProps: RawFile, parentServer: Server, dir: string) {
@@ -29,7 +45,7 @@ export class File implements FileAttributes {
     this.mimetype = fileProps.attributes.mimetype;
     this.created_at = new Date(fileProps.attributes.created_at);
     this.modified_at = new Date(fileProps.attributes.modified_at);
-    this.parenServer = parentServer;
+    this.parentServer = parentServer;
     this.dir = dir.endsWith('/') ? dir : dir + '/';
   }
 
@@ -40,7 +56,7 @@ export class File implements FileAttributes {
     const endpoint = new URL(
       client.panel +
         '/api/client/servers/' +
-        this.parenServer.identifier +
+        this.parentServer.identifier +
         '/files/contents?file=' +
         encodeURIComponent(this.dir + this.name),
     );
@@ -54,7 +70,7 @@ export class File implements FileAttributes {
     const endpoint = new URL(
       client.panel +
         '/api/client/servers/' +
-        this.parenServer.identifier +
+        this.parentServer.identifier +
         '/files/download?file=' +
         encodeURIComponent(this.dir + this.name),
     );
@@ -76,7 +92,7 @@ export class File implements FileAttributes {
    * Rename this file
    */
   public async rename(newName: string): Promise<void> {
-    await this.parenServer.renameFiles(this.dir, [{ from: this, to: newName }]);
+    await this.parentServer.renameFiles(this.dir, [{ from: this, to: newName }]);
   }
 
   /**
@@ -84,7 +100,7 @@ export class File implements FileAttributes {
    * When copied, 'copy' is appended to the file name.
    */
   public async copy(): Promise<void> {
-    const endpoint = new URL(client.panel + '/api/client/servers/' + this.parenServer.identifier + '/files/copy');
+    const endpoint = new URL(client.panel + '/api/client/servers/' + this.parentServer.identifier + '/files/copy');
     await client.api({
       url: endpoint.href,
       method: 'POST',
@@ -99,7 +115,7 @@ export class File implements FileAttributes {
     const endpoint = new URL(
       client.panel +
         '/api/client/servers/' +
-        this.parenServer.identifier +
+        this.parentServer.identifier +
         '/files/write?file=' +
         encodeURIComponent(this.dir + this.name),
     );
@@ -114,20 +130,20 @@ export class File implements FileAttributes {
    * Compress this file
    */
   public async compress(): Promise<File> {
-    return await this.parenServer.compressFiles(this.dir, [this]);
+    return await this.parentServer.compressFiles(this.dir, [this]);
   }
 
   /**
    * Decompress this file
    */
   public async decompress(): Promise<void> {
-    await this.parenServer.decompressFile(this.dir, this);
+    await this.parentServer.decompressFile(this.dir, this);
   }
 
   /**
    * Delete this file
    */
   public async delete(): Promise<void> {
-    await this.parenServer.deleteFiles(this.dir, [this]);
+    await this.parentServer.deleteFiles(this.dir, [this]);
   }
 }

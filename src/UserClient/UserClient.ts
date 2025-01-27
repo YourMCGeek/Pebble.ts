@@ -30,6 +30,7 @@ export class UserClient extends BaseClient {
   /**
    * Get a Server on this account
    */
+  // TODO is this a route?
   public async getServer(id: string): Promise<Server> {
     const endpoint = new URL(this.panel + '/api/client/servers/' + id);
     return new Server(this, (await this.api({ url: endpoint.href })) as RawServer);
@@ -38,6 +39,7 @@ export class UserClient extends BaseClient {
   /**
    * Get the usage for a specific server
    */
+  // TODO move to Server
   public async getServerUsage(id: string): Promise<StatsAttributes> {
     const endpoint = new URL(this.panel + '/api/client/servers/' + id + '/resources');
     return ((await this.api({ url: endpoint.href })) as RawStats).attributes;
@@ -46,6 +48,7 @@ export class UserClient extends BaseClient {
   /**
    * Get the status of a specific server
    */
+  // TODO move to Server
   public async getServerStatus(id: string): Promise<ServerStatus> {
     return (await this.getServerUsage(id)).current_state;
   }

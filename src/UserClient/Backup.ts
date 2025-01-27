@@ -4,6 +4,14 @@ import { RawSignedUrl } from '../types/user/signedUrl';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
+/* TODO
+ * - GET /api/client/servers/{server}/backups
+ * - POST /api/client/servers/{server}/backups
+ * - GET /api/client/servers/{server}/backups/status
+ * - GET /api/client/servers/{server}/backups/deletedRestore
+ * - POST /api/client/servers/{server}/backups/{backup}/export
+ */
+
 let client: UserClient;
 export class Backup implements BackupAttributes {
   readonly uuid: string;
@@ -66,6 +74,7 @@ export class Backup implements BackupAttributes {
     });
   }
 
+  // TODO: Look into this. Is this a Ptero builtin thing?
   private async lockRequest() {
     const endpoint = new URL(
       client.panel + '/api/client/servers/' + this.parentServer.identifier + '/backups/' + this.uuid + '/lock',

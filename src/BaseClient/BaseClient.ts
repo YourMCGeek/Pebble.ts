@@ -8,12 +8,12 @@ export type ClientOptions = {
 
 export class BaseClient {
   protected apikey: string;
-  public panel: string;
+  public panel: string = 'https://panel.pebblehost.com';
   public api = async function api(
     config: AxiosRequestConfig,
     errorSet?: Array<{ code: number; message: string }>,
     ignoredErrors?: Array<string>,
-  ): Promise<any> {};
+  ): Promise<any> { };
   constructor(options: ClientOptions) {
     this.apikey = 'Bearer ' + options.apikey;
     this.panel = new URL(options.panel).origin;

@@ -1,5 +1,5 @@
 import { ServerStatus } from '../base/serverStatus';
-import { RawAllocationList } from './allocation';
+import { RawAllocationList } from './networking';
 import { RawEgg } from './egg';
 import { RawEggVariableList } from './eggVariable';
 import { RawServerSubuserList } from './serverSubuser';
@@ -44,7 +44,6 @@ export interface ServerAttributes {
     readonly allocations: number;
     readonly backups: number;
   };
-  status: null;
   readonly is_suspended: boolean;
   readonly is_installing: boolean;
   readonly is_transferring: boolean;

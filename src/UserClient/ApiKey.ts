@@ -1,6 +1,11 @@
 import { ApiKeyAttributes, RawApiKey } from '../types/user/apiKey';
 import { UserClient } from './UserClient';
 
+/* TODO
+ * - GET /api/client/account/api-keys
+ * - POST /api/client/account/api-keys
+ */
+
 let client: UserClient;
 export class ApiKey implements ApiKeyAttributes {
   readonly identifier: string;

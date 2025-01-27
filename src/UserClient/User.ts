@@ -6,6 +6,16 @@ import { RawUserMfa } from '../types/user/userMfa';
 import { ApiKey } from './ApiKey';
 import { UserClient } from './UserClient';
 
+/* TODO
+ * - GET /api/client/account/ => in UserClient
+ * - GET /api/client/account/activity
+ * - GET /api/client/account/deleted-servers
+ * - Migrate API calls to ApiKey.ts?
+ * - GET /api/client/account/ssh-keys
+ * - POST /api/client/account/ssh-keys
+ * - POST /api/client/account/ssh-keys/remove
+ */
+
 let client: UserClient;
 export class User implements UserAttributes {
   readonly id: number;
@@ -71,27 +81,10 @@ export class User implements UserAttributes {
   }
 
   /**
-   * Update this accounts email address
-   * @param email A valid new email address
-   * @param password The account password
-   * @throws Invalid email and/or password error
-   */
-  public async updateEmail(email: string, password: string): Promise<void> {
-    const endpoint = new URL(client.panel + '/api/client/account/email');
-    await client.api(
-      {
-        url: endpoint.href,
-        method: 'PUT',
-        data: { email: email, password: password },
-      },
-      [{ code: 400, message: 'Invalid email and/or password' }],
-    );
-  }
-
-  /**
    * Updates this accounts password
    * @param oldPassword The old password for this account
    */
+  // FIXME wrong route
   public async updatePassword(oldPassword: string, newPassword: string, repeatPassword?: string): Promise<void> {
     const endpoint = new URL(client.panel + '/api/client/account/email');
     await client.api({
