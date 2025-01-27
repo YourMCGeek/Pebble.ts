@@ -1,4 +1,4 @@
-const { readdirSync, writeFileSync } = require('fs');
+const { readdirSync, writeFileSync } = require('fs-extra');
 
 const classFolders = ['ApplicationClient', 'UserClient', 'builder'];
 const additionalExports = [
