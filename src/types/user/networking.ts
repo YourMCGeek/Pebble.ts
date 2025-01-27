@@ -5,10 +5,10 @@ export interface RawAllocationList {
 
 export interface RawAllocation {
   object: 'allocation';
-  attributes: AllocationAttributes;
+  attributes: NetworkingAttributes;
 }
 
-export interface AllocationAttributes {
+export interface NetworkingAttributes {
   readonly id: number;
   readonly ip: string;
   readonly ip_alias?: string;

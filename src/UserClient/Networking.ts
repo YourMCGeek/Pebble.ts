@@ -1,9 +1,14 @@
-import { AllocationAttributes, RawAllocation } from '../types/user/allocation';
+import { NetworkingAttributes, RawAllocation } from '../types/user/networking';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
+/* TODO
+ * - GET /api/client/servers/{server}/network/allocations
+ * - POST /api/client/servers/{server}/network/allocations/
+ */
+
 let client: UserClient;
-export class Allocation implements AllocationAttributes {
+export class Allocation implements NetworkingAttributes {
   readonly id: number;
   readonly ip: string;
   readonly ip_alias?: string;
@@ -42,6 +47,7 @@ export class Allocation implements AllocationAttributes {
   /**
    * Set the notes of this allocation
    */
+  // FIXME Should be a PUT request qith params
   public async setPrimary(): Promise<void> {
     const endpoint = new URL(
       client.panel + '/api/client/servers/' + this.parentServer.identifier + '/network/allocations/' + this.id + '/primary',
