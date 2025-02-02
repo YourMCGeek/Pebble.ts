@@ -1,4 +1,4 @@
-import { UserPermission } from '../types/base/userPermission';
+import { UserPermission } from '../typesOld/base/userPermission';
 
 export class SubUserBuilder {
   email: string;

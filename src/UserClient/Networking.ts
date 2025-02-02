@@ -1,4 +1,4 @@
-import { NetworkingAttributes, RawAllocation } from '../types/user/networking';
+import { NetworkingAttributes, RawAllocation } from '../typesOld/user/networking';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 

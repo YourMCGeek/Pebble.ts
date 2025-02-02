@@ -1,5 +1,5 @@
-import { SERVER_SIGNAL, ServerSignalOption } from '../types/base/serverStatus';
-import { ScheduleActionType } from '../types/user/scheduleTask';
+import { SERVER_SIGNAL, ServerSignalOption } from '../typesOld/base/serverStatus';
+import { ScheduleActionType } from '../typesOld/user/scheduleTask';
 
 export class ScheduleTaskBuilder {
   action: ScheduleActionType = 'command';

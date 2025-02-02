@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import stripColor from 'strip-color';
 import WebSocket from 'ws';
-import { ServerSignalOption } from '../types/base/serverStatus';
+import { ServerSignalOption } from '../typesOld/base/serverStatus';
 import {
   BackupCompletedEvent,
   BackupCompletedJson,
@@ -12,7 +12,7 @@ import {
   StatsWsJson,
   StatusWsEvent,
   WebsocketEvent,
-} from '../types/user/consoleSocket';
+} from '../typesOld/user/consoleSocket';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 

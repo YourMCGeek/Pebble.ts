@@ -1,4 +1,4 @@
-import { ApiKeyAttributes, RawApiKey } from '../types/user/apiKey';
+import { ApiKeyAttributes, RawApiKey } from '../typesOld/user/apiKey';
 import { UserClient } from './UserClient';
 
 /* TODO

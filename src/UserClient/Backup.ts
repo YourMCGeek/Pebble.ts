@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { BackupAttributes, RawBackup } from '../types/user/serverBackup';
-import { RawSignedUrl } from '../types/user/signedUrl';
+import { BackupAttributes, RawBackup } from '../typesOld/user/serverBackup';
+import { RawSignedUrl } from '../typesOld/user/signedUrl';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 

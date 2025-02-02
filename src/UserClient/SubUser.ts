@@ -1,5 +1,5 @@
-import { UserPermission } from '../types/base/userPermission';
-import { RawServerSubuser, ServerSubuserAttributes } from '../types/user/serverSubuser';
+import { UserPermission } from '../typesOld/base/userPermission';
+import { RawServerSubuser, ServerSubuserAttributes } from '../typesOld/user/serverSubuser';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 

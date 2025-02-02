@@ -1,4 +1,4 @@
-import { EggVariableAttributes, RawEggVariable } from '../types/user/eggVariable';
+import { EggVariableAttributes, RawEggVariable } from '../typesOld/user/eggVariable';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 

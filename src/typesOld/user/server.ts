@@ -1,4 +1,3 @@
-import { ServerStatus } from '../base/serverStatus';
 import { RawAllocationList } from './networking';
 import { RawEgg } from './egg';
 import { RawEggVariableList } from './eggVariable';

@@ -1,8 +1,8 @@
 import { BaseClient, ClientOptions } from '../BaseClient/BaseClient';
-import { ServerStatus } from '../types/base/serverStatus';
-import { RawServer, RawServerList } from '../types/user/server';
-import { RawStats, StatsAttributes } from '../types/user/stats';
-import { RawUser } from '../types/user/user';
+import { ServerStatus } from '../typesOld/base/serverStatus';
+import { RawServer, RawServerList } from '../typesOld/user/server';
+import { RawStats, StatsAttributes } from '../typesOld/user/stats';
+import { RawUser } from '../typesOld/user/user';
 import { Server } from './Server';
 import { User } from './User';
 

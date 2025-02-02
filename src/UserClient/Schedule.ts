@@ -1,6 +1,6 @@
 import { ScheduleTaskBuilder } from '../builder/ScheduleTaskBuilder';
-import { RawScheduleTaskList } from '../types/user/scheduleTask';
-import { RawServerSchedule, ServerScheduleAttributes } from '../types/user/serverSchedule';
+import { RawScheduleTaskList } from '../typesOld/user/scheduleTask';
+import { RawServerSchedule, ServerScheduleAttributes } from '../typesOld/user/serverSchedule';
 import { ScheduleTask } from './ScheduleTask';
 import { Server } from './Server';
 import { UserClient } from './UserClient';

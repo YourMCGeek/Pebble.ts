@@ -1,8 +1,8 @@
 import { ApiKeyBuilder } from '../builder/ApiKeyBuilder';
-import { RawApiKey, RawApiKeyList } from '../types/user/apiKey';
-import { RawRecoveryTokens, RecoveryTokensAttributes } from '../types/user/recoveryTokens';
-import { RawUser, UserAttributes } from '../types/user/user';
-import { RawUserMfa } from '../types/user/userMfa';
+import { RawApiKey, RawApiKeyList } from '../typesOld/user/apiKey';
+import { RawRecoveryTokens, RecoveryTokensAttributes } from '../typesOld/user/recoveryTokens';
+import { RawUser, UserAttributes } from '../typesOld/user/user';
+import { RawUserMfa } from '../typesOld/user/userMfa';
 import { ApiKey } from './ApiKey';
 import { UserClient } from './UserClient';
 

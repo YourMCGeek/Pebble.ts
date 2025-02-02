@@ -1,5 +1,5 @@
-import { ServerSignalOption } from '../types/base/serverStatus';
-import { RawScheduleTask, ScheduleActionType, ScheduleTaskAttributes } from '../types/user/scheduleTask';
+import { ServerSignalOption } from '../typesOld/base/serverStatus';
+import { RawScheduleTask, ScheduleActionType, ScheduleTaskAttributes } from '../typesOld/user/scheduleTask';
 import { Schedule } from './Schedule';
 import { UserClient } from './UserClient';
 

@@ -1,5 +1,5 @@
-import { RawDatabasePassword } from '../types/user/databasePassword';
-import { RawServerDatabase, ServerDatabaseAttributes } from '../types/user/serverDatabase';
+import { RawDatabasePassword } from '../typesOld/user/databasePassword';
+import { RawServerDatabase, ServerDatabaseAttributes } from '../typesOld/user/serverDatabase';
 import { Server } from './Server';
 import { UserClient } from './UserClient';
 
