@@ -1,5 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 
+/**
+ * Handles API requests to the PebbleHost API.
+ *
+ * @author BothimTV <https://github.com/BothimTV/pterodactyl.ts/blob/main/src/functions/axois.ts>
+ */
 class ApiRequestHandler {
   private httpClient: AxiosInstance;
 
@@ -14,10 +19,19 @@ class ApiRequestHandler {
   }
 
   private defaultErrorSet: Array<{ code: number; message: string }> = [
-    { code: 401, message: 'Unauthorized. Please confirm that a valid API token is being passed.' },
+    {
+      code: 401,
+      message: 'Unauthorized. Please confirm that a valid API token is being passed.',
+    },
     { code: 403, message: 'Forbidden.' },
-    { code: 405, message: 'Method not allowed. Please report this to the Wrapper developer.' },
-    { code: 502, message: 'Daemon is unreachable. Please try again in a few minutes or contact support.' },
+    {
+      code: 405,
+      message: 'Method not allowed. Please report this to the Wrapper developer.',
+    },
+    {
+      code: 502,
+      message: 'Daemon is unreachable. Please try again in a few minutes or contact support.',
+    },
   ];
 
   async request(
