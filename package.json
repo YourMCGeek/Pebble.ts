@@ -7,7 +7,7 @@
   "scripts": {
     "test": "npx jest",
     "build-docs": "npx typedoc ./src",
-    "build": "npx ts-node ./src/createExports.js && tsup src/index.ts --format cjs,esm --dts",
+    "build": "npx ts-node ./src/createExports.js && tsc --project tsconfig.json",
     "lint": "npx prettier -c .",
     "lint:fix": "npx prettier -w ."
   },
