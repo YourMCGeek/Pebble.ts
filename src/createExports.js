@@ -1,9 +1,10 @@
 const { readdirSync, writeFileSync } = require('fs-extra');
 
-const classFolders = ['ApplicationClient', 'UserClient', 'builder'];
+const classFolders = ['clients'];
 const additionalExports = [
   'export * from "./functions/util";',
-  'export { SocketEvent, PowerState, StatsWsJson, BackupCompletedJson } from "./types/user/consoleSocket";',
+  'export * from "./functions/ApiRequestHandler";',
+  'export { Wrapper } from "./Wrapper";',
 ];
 
 const res = ['/* Auto generated */'];
@@ -16,10 +17,22 @@ for (const folder of classFolders) {
   }
 }
 
-res.push(`\n/* types/base */`);
-const files = readdirSync(`./src/types/base`).filter((file) => file.endsWith('.ts'));
-for (const file of files) {
-  res.push(`export * from "./types/base/${file.split('.')[0]}";`);
+res.push(`\n/* types/account */`);
+const accountFiles = readdirSync(`./src/types/account`).filter((file) => file.endsWith('.ts'));
+for (const file of accountFiles) {
+  res.push(`export * from "./types/account/${file.split('.')[0]}";`);
+}
+
+res.push(`\n/* types/server */`);
+const serverFiles = readdirSync(`./src/types/server`).filter((file) => file.endsWith('.ts'));
+for (const file of serverFiles) {
+  res.push(`export * from "./types/server/${file.split('.')[0]}";`);
+}
+
+res.push(`\n/* types/misc */`);
+const miscFiles = readdirSync(`./src/types/misc`).filter((file) => file.endsWith('.ts'));
+for (const file of miscFiles) {
+  res.push(`export * from "./types/misc/${file.split('.')[0]}";`);
 }
 
 res.push('\n/* Additional */');

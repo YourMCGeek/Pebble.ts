@@ -1,4 +1,4 @@
-import ApiRequestHandler from '../functions/ApiRequestHandler';
+import { ApiRequestHandler } from '../functions/ApiRequestHandler';
 import { ActivityLogResponse } from '../types/account/activityLog';
 import { SignedUrlAttributes } from '../types/misc/signedUrl';
 import { BackupList } from '../types/server/serverBackup';
@@ -1014,5 +1014,3 @@ class FileObject {
     return endpoint;
   }
 }
-
-export default ServerClient;

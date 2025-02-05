@@ -1,16 +1,21 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
 
 /**
  * Handles API requests to the PebbleHost API.
  *
  * @author BothimTV <https://github.com/BothimTV/pterodactyl.ts/blob/main/src/functions/axois.ts>
  */
-class ApiRequestHandler {
+export class ApiRequestHandler {
   private httpClient: AxiosInstance;
+  private requestQueue: Array<() => Promise<any>> = [];
+  private isProcessingQueue: boolean = false;
+  private rateLimitDelay: number = 1000; // Initial delay (fallback if no rate limit headers are provided)
+  private rateLimitRemaining: number | null = null; // Tracks remaining requests
+  private rateLimitReset: number | null = null; // Tracks when the rate limit resets
 
   constructor(apikey: string) {
     this.httpClient = axios.create({
-      baseURL: 'https://panel.pebblehost.com',
+      baseURL: 'https://panel.pebblehost.com/api', // FIXME: Update documnetation
       headers: {
         Authorization: `Bearer ${apikey}`,
         'Content-Type': 'application/json',
@@ -34,15 +39,90 @@ class ApiRequestHandler {
     },
   ];
 
+  /**
+   * Adds a request to the queue and processes the queue if it's not already being processed.
+   */
+  private async enqueueRequest(config: AxiosRequestConfig): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push(async () => {
+        try {
+          const response = await this.httpClient.request(config);
+          this.updateRateLimitHeaders(response); // Update rate limit headers from the response
+          resolve(response.data);
+        } catch (err) {
+          reject(err);
+        }
+      });
+
+      if (!this.isProcessingQueue) {
+        this.processQueue();
+      }
+    });
+  }
+
+  /**
+   * Updates rate limit headers from the API response.
+   */
+  private updateRateLimitHeaders(response: AxiosResponse): void {
+    const remaining = response.headers['x-ratelimit-remaining'];
+    const reset = response.headers['x-ratelimit-reset'];
+
+    if (remaining !== undefined) {
+      this.rateLimitRemaining = parseInt(remaining, 10);
+    }
+
+    if (reset !== undefined) {
+      this.rateLimitReset = parseInt(reset, 10) * 1000; // Convert to milliseconds
+    }
+
+    // Adjust the delay dynamically based on remaining requests and reset time
+    if (this.rateLimitRemaining !== null && this.rateLimitReset !== null) {
+      const timeUntilReset = this.rateLimitReset - Date.now();
+      if (timeUntilReset > 0) {
+        this.rateLimitDelay = timeUntilReset / Math.max(this.rateLimitRemaining, 1); // Distribute remaining time
+      }
+    }
+  }
+
+  /**
+   * Processes the request queue with a dynamic delay based on rate limit headers.
+   */
+  private async processQueue(): Promise<void> {
+    if (this.requestQueue.length === 0) {
+      this.isProcessingQueue = false;
+      return;
+    }
+
+    this.isProcessingQueue = true;
+    const nextRequest = this.requestQueue.shift();
+
+    if (nextRequest) {
+      try {
+        await nextRequest();
+      } catch (err) {
+        console.error('Request failed:', err);
+      }
+
+      // Add a dynamic delay before processing the next request
+      await new Promise((resolve) => setTimeout(resolve, this.rateLimitDelay));
+      this.processQueue();
+    }
+  }
+
+  /**
+   * Handles API requests with dynamic throttling and error handling.
+   */
   async request(
     config: AxiosRequestConfig,
     errorSet?: Array<{ code: number; message: string }>,
     ignoredErrors?: Array<string>,
   ): Promise<any> {
     const combinedErrorSet = [...this.defaultErrorSet, ...(errorSet || [])];
+
     try {
-      const response = await this.httpClient.request(config);
-      return response.data;
+      // Enqueue the request and wait for it to be processed
+      const response = await this.enqueueRequest(config);
+      return response;
     } catch (err) {
       let error = err as AxiosError;
       let msg = combinedErrorSet.find((e) => e.code === error.response?.status);
@@ -72,5 +152,3 @@ class ApiRequestHandler {
     }
   }
 }
-
-export default ApiRequestHandler;

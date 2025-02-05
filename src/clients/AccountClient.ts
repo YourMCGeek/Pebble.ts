@@ -1,11 +1,11 @@
-import ApiRequestHandler from '../functions/ApiRequestHandler';
+import { ApiRequestHandler } from '../functions/ApiRequestHandler';
 import { ActivityLogResponse } from '../types/account/activityLog';
 import { ApiKey, ApiKeyListResponse } from '../types/account/apiKey';
 import { SshKey, SshKeyListResponse } from '../types/account/sshKey';
 import { UserAttributes } from '../types/account/user';
 import { DeletedServerResponse } from '../types/server/deletedServer';
 
-export default class AccountClient {
+export class AccountClient {
   private api: ApiRequestHandler;
 
   constructor(api: ApiRequestHandler) {

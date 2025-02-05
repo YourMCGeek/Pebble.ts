@@ -1,6 +1,6 @@
-import AccountClient from './clients/AccountClient';
-import ServerClient from './clients/ServerClient';
-import ApiRequestHandler from './functions/ApiRequestHandler';
+import { AccountClient } from './clients/AccountClient';
+import { ServerClient } from './clients/ServerClient';
+import { ApiRequestHandler } from './functions/ApiRequestHandler';
 
 /**
  * The `Wrapper` class provides a convenient interface for interacting with server and account clients.
@@ -16,7 +16,7 @@ import ApiRequestHandler from './functions/ApiRequestHandler';
  * const account = wrapper.account; // Access the AccountClient instance
  * ```
  */
-class Wrapper {
+export class Wrapper {
   private requestHandler: ApiRequestHandler;
   private _serverClient?: ServerClient;
   private _accountClient?: AccountClient;
@@ -40,4 +40,3 @@ class Wrapper {
   }
 }
 
-export default Wrapper;
