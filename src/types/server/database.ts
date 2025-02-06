@@ -10,6 +10,9 @@ export interface ServerDatabaseAttributes {
   username: string;
   connections_from: string;
   max_connections: number;
+  relationships?: {
+    password: DatabasePassword;
+  };
 }
 
 export interface ServerDatabase {
@@ -20,4 +23,18 @@ export interface ServerDatabase {
 export interface DatabaseList {
   object: 'list';
   data: ServerDatabase[];
+}
+
+export interface DatabasePassword {
+  object: 'database_password';
+  attributes: {
+    password: string;
+  };
+}
+
+export interface DatabaseRelationships {
+  object: 'database_relationships';
+  attributes: {
+    relationships: string[];
+  };
 }

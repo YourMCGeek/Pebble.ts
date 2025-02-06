@@ -9,7 +9,7 @@ async function main() {
   let testServer = 'e1327170-a4fe-4577-8549-47f872772e98';
 
   await server.getServerByUUID(testServer).then(async (svr) => {
-    let obj = await svr.backups.delete('81875998');
+    let obj = await svr.files.deleteFiles(['test.txt'], '/', true);
     console.log(obj);
   });
 }

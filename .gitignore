@@ -7,3 +7,4 @@ package-lock.json
 generated
 *.yaml
 tests
+tests/index.js

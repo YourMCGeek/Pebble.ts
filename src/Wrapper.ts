@@ -25,7 +25,7 @@ export class Wrapper {
     this.requestHandler = new ApiRequestHandler(apikey);
   }
 
-  get servers() {
+  get server() {
     if (!this._serverClient) {
       this._serverClient = new ServerClient(this.requestHandler);
     }
@@ -39,4 +39,3 @@ export class Wrapper {
     return this._accountClient;
   }
 }
-

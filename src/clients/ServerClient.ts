@@ -1,8 +1,8 @@
 import { ApiRequestHandler } from '../functions/ApiRequestHandler';
 import { ActivityLogResponse } from '../types/account/activityLog';
 import { SignedUrlAttributes } from '../types/misc/signedUrl';
-import { BackupList } from '../types/server/serverBackup';
-import { DatabaseList, ServerDatabase } from '../types/server/database';
+import { BackupList, BackupStatus } from '../types/server/serverBackup';
+import { DatabaseList, DatabasePassword, ServerDatabase, ServerDatabaseAttributes } from '../types/server/database';
 import {
   ServerListResponse,
   ServerAttributes,
@@ -16,6 +16,13 @@ import {
 } from '../types/server/server';
 import { DatabaseBackupList } from '../types/server/databaseBackup';
 import { FileObjectList, FilePullList } from '../types/server/files';
+import { EventsAndActors } from '../types/server/activityFilters';
+import { AnalyticsData } from '../types/server/analytics';
+import { MigrationDetails } from '../types/server/migration';
+import { Preinstalls } from '../types/server/preinstalls';
+import { ProjectEggVariable, ProjectList } from '../types/server/projects';
+import { Notices } from '../types/server/notices';
+import { Operations } from '../types/server/operations';
 
 /**
  * Represents a client for interacting with the server API.
@@ -38,7 +45,7 @@ export class ServerClient {
       url: '/client',
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as ServerListResponse;
   }
 
   /**
@@ -52,7 +59,7 @@ export class ServerClient {
       url: `/client/servers/${uuid}`,
       method: 'GET',
     });
-    return new ServerObject(this.requestHandler, endpoint.data);
+    return new ServerObject(this.requestHandler, endpoint);
   }
 }
 
@@ -65,9 +72,9 @@ class ServerObject implements Server {
   private requestHandler: ApiRequestHandler;
   public attributes: ServerAttributes;
 
-  constructor(api: ApiRequestHandler, attributes: ServerAttributes) {
+  constructor(api: ApiRequestHandler, server: Server) {
     this.requestHandler = api;
-    this.attributes = attributes;
+    this.attributes = server.attributes;
   }
   object: 'server' = 'server';
 
@@ -105,7 +112,7 @@ class ServerObject implements Server {
    * @returns A promise that resolves to the {@link ServerAttributes}.
    */
   async getDetails(): Promise<ServerAttributes> {
-    return this.attributes;
+    return this.attributes as ServerAttributes;
   }
 
   /**
@@ -115,12 +122,12 @@ class ServerObject implements Server {
    *
    * @returns A promise that resolves to the server's resource statistics details.
    */
-  async getResources() {
+  async getResources(): Promise<StatsDetails> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/resources`,
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint.attributes as StatsDetails;
   }
 
   /**
@@ -144,44 +151,46 @@ class ServerObject implements Server {
     page?: number,
     maxPerPage?: number,
   ): Promise<ActivityLogResponse> {
+    let params = {};
+    if (include) params = { ...params, include };
+    if (filterActorsId) params = { ...params, 'filters[actor_id]': filterActorsId };
+    if (filterEvent) params = { ...params, 'filters[event]': filterEvent };
+    if (sort) params = { ...params, sort: `${sortDescending ? '-' : ''}${sort}` };
+    if (page) params = { ...params, page };
+    if (maxPerPage) params = { ...params, per_page: maxPerPage };
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/activity`,
       method: 'GET',
       data: {
-        include: include,
-        'filters[actor_id]': filterActorsId,
-        'filters[event]': filterEvent,
-        sort: `${sortDescending ? '-' : ''}${sort}`,
-        page: page,
-        per_page: maxPerPage,
+        ...params,
       },
     });
-    return endpoint;
+    return endpoint as ActivityLogResponse;
   }
 
   // FIXME: Undocumented response
   /**
    * Fetches the activity filters for the server associated with this client.
    *
-   * @returns {Promise<string[]>} A promise that resolves to an array of activity filters.
+   * @returns {EventsAndActors} A promise that resolves to {@link EventsAndActors}.
    */
-  async getActivityFilters(): Promise<string[]> {
+  async getActivityFilters(): Promise<EventsAndActors> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/activity/filters`,
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint as EventsAndActors;
   }
 
-  // FIXME: Undocumented response
+  // FIXME: What does each value mean?
   /**
    * Retrieves analytics data for the specified number of days.
    *
-   * @param days - The number of days for which to retrieve analytics data. Must be 10 or fewer.
+   * @param days - The number of days for which to retrieve analytics data. Must be 10 or fewer, defaults to 7.
    * @returns A promise that resolves with the analytics data or rejects with an error if the number of days exceeds 10.
    * @throws {Error} Number of days must be less than or equal to 10.
    */
-  async getAnalytics(days: number): Promise<any> {
+  async getAnalytics(days: number | 7): Promise<AnalyticsData> {
     if (days > 10) {
       return Promise.reject(new Error('The maximum number of days that can be requested is 10.'));
     }
@@ -190,22 +199,25 @@ class ServerObject implements Server {
       method: 'GET',
       data: { days: days },
     });
-    return endpoint.data;
+    return endpoint as AnalyticsData;
   }
 
   /**
    * Runs the server importer to import files from another host.
    *
+   * @param protocol - The protocol to use for the import, either 'sftp' or 'ftp'.
    * @param hostname - The hostname of the server to import.
    * @param port - The port number to connect to, defaults to 2022.
    * @param username - The username for authentication.
    * @param password - The password for authentication.
+   * @throws {ValidationException} - If any parameters are missing.
    */
-  async startImport(hostname: string, port: 2022 | number, username: string, password: string) {
+  async startImport(protocol: string, hostname: string, port: 2022 | number, username: string, password: string) {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/import`,
       method: 'POST',
       data: {
+        protocol: protocol,
         hostname: hostname,
         port: port,
         username: username,
@@ -225,7 +237,7 @@ class ServerObject implements Server {
       url: `/client/servers/${this.attributes.uuid}/migration`,
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint;
   }
 
   /**
@@ -235,8 +247,16 @@ class ServerObject implements Server {
    * @returns A promise that resolves with the endpoint response if the migration is initiated successfully,
    *          or rejects with an error if the location is invalid.
    * @throws {Error} If the location is not valid. Use {@link getAvailableMigrationLocations} to get a list of available locations.
+   * @throws {Error} If the parameter is missing.
    */
   async startMigration(location: string) {
+    if (!location) {
+      return Promise.reject(
+        new Error(
+          'The location must be a valid location. Use getAvailableMigrationLocations to get a list of available locations.',
+        ),
+      );
+    }
     if (location.length > 2) {
       return Promise.reject(
         new Error(
@@ -252,32 +272,36 @@ class ServerObject implements Server {
     return endpoint;
   }
 
-  // FIXME: Undocumented response
   // TODO: Check to see if user is admin, if not, return error
   /**
    * (Admin-only) Returns the details of any ongoing migrations for a server.
    *
    * @todo Check to see if user is admin, if not, return error
    */
-  async getMigrationDetails() {
+  // FIXME: Returns forbidden
+  async getMigrationDetails(): Promise<MigrationDetails> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/migration/details`,
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint as MigrationDetails;
   }
 
-  // FIXME: Undocumented response
   // TODO: Check to see if user is admin, if not, return error
   /**
    * (Admin-only) Starts a transfer of a server to a new node, keeping the same IP.
    *
    * @param newNodeId - The ID of the new node to which the server will be transferred.
    * @todo Check to see if user is admin, if not, return error
+   * @throws {Error} If the newNodeId parameter is missing.
    */
+  // FIXME: Returns forbidden
   async startTransfer(newNodeId: string) {
+    if (!newNodeId) {
+      return Promise.reject(new Error('The newNodeId parameter is required.'));
+    }
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.attributes.uuid}/transfer`,
+      url: `/client/servers/${this.attributes.uuid}/migration/transfer`,
       method: 'POST',
       data: { node_id: newNodeId },
     });
@@ -290,11 +314,13 @@ class ServerObject implements Server {
    * @param name - The new name for the server.
    * @param description - The new description for the server.
    */
-  async renameServer(name: string, description: string) {
+  async renameServer(name: string, description?: string) {
+    let params = {};
+    if (description) params = { ...params, description: description };
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/settings/rename`,
       method: 'POST',
-      data: { name: name, description: description },
+      data: { name: name, ...params },
     });
     return endpoint;
   }
@@ -308,66 +334,92 @@ class ServerObject implements Server {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/settings/subdomain`,
       method: 'POST',
-      data: { subdomain: subdomain },
+      data: { domain: subdomain },
     });
     return endpoint;
   }
 
-  // FIXME: Undocumented response
+  /**
+   * Retrieves a list of available preinstalls for the server.
+   *
+   * @returns A promise that resolves to a {@link PreinstallList} containing the available preinstalls.
+   */
+  async getAvailablePreinstalls(): Promise<Preinstalls> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.attributes.uuid}/preinstalls`,
+      method: 'GET',
+    });
+    return endpoint as Preinstalls;
+  }
+
+  // FIXME: Which ID is this referring to?
+  /**
+   * Starts a preinstall process for the server.
+   *
+   * @param {number} id - The ID of the preinstall to start.
+   * @throws {Error} - Throws an error if the id parameter is not provided.
+   */
+  async startPreinstall(id: number) {
+    if (!id) {
+      return Promise.reject(new Error('The id parameter is required.'));
+    }
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.attributes.uuid}/preinstalls/`,
+      method: 'POST',
+      data: { id: id },
+    });
+    return endpoint;
+  }
+
+  // FIXME: Returns 404: Is this not implemented yet?
+  async getProjects(): Promise<ProjectList> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.attributes.uuid}/projects`,
+      method: 'GET',
+    });
+    return endpoint as ProjectList;
+  }
+
+  async installProject(versionId: number): Promise<any> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.attributes.uuid}/projects/install`,
+      method: 'POST',
+      data: { version_id: versionId },
+    });
+    if (endpoint.status === 200) {
+      return Promise.resolve(endpoint as ProjectEggVariable);
+    } else {
+      return endpoint;
+    }
+  }
+
   /**
    * Returns a list of Node.js versions that can be selected by Node.js Bots.
    *
    * @returns A promise that resolves to an array of Node.js versions.
    */
+  // FIXME: Update Route for consistency
+  // FIXME: Returns forbidden
   async getNodeJSVersions(): Promise<string[]> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/bot-node-versions`,
       method: 'GET',
     });
-    return endpoint.data;
-  }
-
-  // FIXME: Undocumented response
-  /**
-   * Lists bot preinstalls available for the given server.
-   *
-   * @returns A promise that resolves to an array of bot preinstall names.
-   */
-  async getBotPreinstalls(): Promise<string[]> {
-    const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.attributes.uuid}/bot-preinstalls`,
-      method: 'GET',
-    });
-    return endpoint.data;
-  }
-
-  /**
-   * Runs a bot preinstall for the given server.
-   *
-   * @param preinstall - The identifier of the bot preinstall to start.
-   */
-  async startBotPreinstall(preinstall: string) {
-    const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.attributes.uuid}/bot-preinstalls`,
-      method: 'POST',
-      data: { preinstall: preinstall },
-    });
     return endpoint;
   }
 
-  // FIXME: Undocumented response
   /**
    * Fetches the notices for the server associated with this client.
    * Banners may include a resource warning (server constantly near or at resoruce limits) or modpack updates.
    *
    * @returns A promise that resolves to an array of notice strings.
    */
-  async getNotices(): Promise<string[]> {
+  async getNotices(): Promise<Notices> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.attributes.uuid}/notices`,
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint as Notices;
   }
 
   /**
@@ -387,7 +439,7 @@ class ServerObject implements Server {
    * @returns A promise that resolves to {@link Limits}.
    */
   async getLimits(): Promise<Limits> {
-    return this.attributes.limits;
+    return this.attributes.limits as Limits;
   }
 
   /**
@@ -396,7 +448,7 @@ class ServerObject implements Server {
    * @returns A promise that resolves to {@link SftpDetails}.
    */
   async getSFTPDetails(): Promise<SftpDetails> {
-    return this.attributes.sftp_details;
+    return this.attributes.sftp_details as SftpDetails;
   }
 
   /**
@@ -405,7 +457,7 @@ class ServerObject implements Server {
    * @returns A promise that resolves to the feature limits.
    */
   async getFeatureLimits(): Promise<FeatureLimits> {
-    return this.attributes.feature_limits;
+    return this.attributes.feature_limits as FeatureLimits;
   }
 
   /**
@@ -414,7 +466,7 @@ class ServerObject implements Server {
    * @returns A promise that resolves to the {@link Relationships}.
    */
   async getRelationships(): Promise<Relationships> {
-    return this.attributes.relationships;
+    return this.attributes.relationships as Relationships;
   }
 
   /**
@@ -423,7 +475,7 @@ class ServerObject implements Server {
    * @returns A promise that resolves to the {@link Node}.
    */
   async getNode(): Promise<Node> {
-    return this.attributes.node;
+    return this.attributes.node as Node;
   }
 
   /**
@@ -432,7 +484,11 @@ class ServerObject implements Server {
    * @returns A promise that resolves to an array of egg features.
    */
   async getEggFeatures(): Promise<string[]> {
-    return this.attributes.egg_features;
+    return this.attributes.egg_features as string[];
+  }
+
+  async getStatusLink(): Promise<string> {
+    return this.attributes.node.status_link as string;
   }
 }
 
@@ -450,7 +506,7 @@ class BackupsObject {
    *
    * @returns A promise that resolves to the list of backups, {@link BackupList}.
    */
-  async get(): Promise<BackupList> {
+  async getBackups(): Promise<BackupList> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/backups`,
       method: 'GET',
@@ -474,12 +530,12 @@ class BackupsObject {
    *
    * @returns A promise that resolves to the backup status.
    */
-  async getStatus(): Promise<string[]> {
+  async getStatus(): Promise<BackupStatus> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/backups/status`,
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as BackupStatus;
   }
 
   /**
@@ -508,17 +564,18 @@ class BackupsObject {
       method: 'GET',
     });
 
-    return endpoint.data.attributes;
+    return endpoint.attributes.url as SignedUrlAttributes;
   }
 
   /**
    * Restore a given backup onto the server.
    *
-   * @param backup - The backup identifier.
+   * @param id - The backup identifier.
    */
-  async restore(backup: string) {
+  // FIXME: Update documentation
+  async restore(id: string) {
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.uuid}/backups/${backup}/restore`,
+      url: `/client/servers/${this.uuid}/backups/${id}/restore`,
       method: 'POST',
     });
     return endpoint;
@@ -527,11 +584,11 @@ class BackupsObject {
   /**
    * Start the export process for a given backup so it can be downloaded.
    *
-   * @param backup - The backup identifier.
+   * @param id - The backup identifier.
    */
-  async export(backup: string) {
+  async export(id: string) {
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.uuid}/backups/${backup}/export`,
+      url: `/client/servers/${this.uuid}/backups/${id}/export`,
       method: 'POST',
     });
     return endpoint;
@@ -565,27 +622,28 @@ class DatabaseObject {
    *
    * @returns A promise that resolves to the list of databases.
    */
-  async get(): Promise<DatabaseList> {
+  async getDatabases(): Promise<DatabaseList> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/databases`,
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as DatabaseList;
   }
 
   /**
    * Create a new database for the given server.
    *
    * @param database - The name of the database to create.
-   * @returns A promise that resolves to the created database, {@link ServerDatabase}.
+   * @param remote - The remote address to allow connections from, defaults to `%`.
+   * @returns A promise that resolves to the created database, {@link ServerDatabaseAttributes}.
    */
-  async createDatabase(database: string): Promise<ServerDatabase> {
+  async createDatabase(database: string, remote?: string | '%'): Promise<ServerDatabaseAttributes> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/databases`,
       method: 'POST',
-      data: { database: database, remote: '%' },
+      data: { database: database, remote: remote },
     });
-    return endpoint;
+    return endpoint as ServerDatabaseAttributes;
   }
 
   /**
@@ -598,7 +656,7 @@ class DatabaseObject {
       url: `/client/servers/${this.uuid}/databases/backups`,
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as DatabaseBackupList;
   }
 
   /**
@@ -625,17 +683,32 @@ class DatabaseObject {
       url: `/client/servers/${this.uuid}/databases/backups/${backup}/download`,
       method: 'GET',
     });
-    return endpoint.data.attributes;
+    return endpoint.attributes.url as SignedUrlAttributes;
+  }
+
+  /**
+   * Rotates the password for the given database.
+   *
+   * @param databaseId - The ID of the database.
+   * @returns - A new password for the database.
+   */
+  // FIXME: Update documentation
+  async rotatePassword(databaseId: string): Promise<string> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/databases/${databaseId}/rotate-password`,
+      method: 'POST',
+    });
+    return endpoint.attributes.relationships.password.attributes.password as string;
   }
 
   /**
    * Removes a database from the server.
    *
-   * @param database - The name of the database to delete.
+   * @param id - The name of the database to delete.
    */
-  async deleteDatabase(database: string) {
+  async deleteDatabase(id: string) {
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.uuid}/databases/${database}`,
+      url: `/client/servers/${this.uuid}/databases/${id}`,
       method: 'DELETE',
     });
     return endpoint;
@@ -644,25 +717,25 @@ class DatabaseObject {
   /**
    * Returns a SQL dump of the database.
    *
-   * @param databaseId - The ID of the database.
+   * @param id - The ID of the database.
    */
-  async exportDatabase(databaseId: number) {
+  async exportDatabase(id: number): Promise<string> {
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.uuid}/databases/${databaseId}/export`,
+      url: `/client/servers/${this.uuid}/databases/${id}/export`,
       method: 'POST',
     });
-    return endpoint;
+    return endpoint as string;
   }
 
   // FIXME: Undocumented body
   /**
    * Imports the given SQL dump to the database.
    *
-   * @param databaseId - The ID of the database.
+   * @param id - The ID of the database.
    */
-  async importDatabase(databaseId: number) {
+  async importDatabase(id: number) {
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.uuid}/databases/${databaseId}/import`,
+      url: `/client/servers/${this.uuid}/databases/${id}/import`,
       method: 'POST',
     });
     return endpoint;
@@ -687,10 +760,10 @@ class FileObject {
   async getFiles(directory?: '/' | string): Promise<FileObjectList> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/list`,
-      method: 'POST',
+      method: 'GET',
       data: { directory: directory },
     });
-    return endpoint;
+    return endpoint as FileObjectList;
   }
 
   /**
@@ -703,10 +776,10 @@ class FileObject {
   async searchFiles(query: string, root?: '/' | string): Promise<FileObjectList> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/search`,
-      method: 'POST',
+      method: 'GET',
       data: { root: root, query: query },
     });
-    return endpoint;
+    return endpoint as FileObjectList;
   }
 
   /**
@@ -718,10 +791,10 @@ class FileObject {
   async getContents(filePath: string): Promise<string> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/contents`,
-      method: 'POST',
+      method: 'GET',
       data: { file: filePath },
     });
-    return endpoint.data;
+    return endpoint as string;
   }
 
   /**
@@ -733,10 +806,10 @@ class FileObject {
   async downloadFile(filePath: string): Promise<SignedUrlAttributes> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/download`,
-      method: 'POST',
-      data: { file: filePath },
+      method: 'GET',
+      data: { file_path: filePath },
     });
-    return endpoint.data.attributes;
+    return endpoint.attributes.url as SignedUrlAttributes;
   }
 
   // TODO Maybe combine? Slightly confusing documentation, needs better error handling
@@ -744,33 +817,33 @@ class FileObject {
    * Generates a one-time token with a link that the user can use to download multiple files.
    *
    * @param paths - The paths of the files to download.
-   * @param root - The root directory to download from.
+   * @param root - The root directory to download from, defaults to `/`.
    * @returns A URL for downloading.
    */
   async downloadFiles(paths: string[], root?: '/' | string): Promise<SignedUrlAttributes> {
+    let params = {};
+    if (root) params = { ...params, root: root };
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/download`,
-      method: 'POST',
-      data: { paths: paths, root: root },
+      method: 'GET',
+      data: { paths: paths, ...params },
     });
-    return endpoint.data.attributes;
+    return endpoint.attributes.url as SignedUrlAttributes;
   }
 
   /**
    * Returns a map of file and directory names to their recursively calculated size.
    *
-   *
-   *
    * @param root - The root directory to calculate sizes from, defaults to `/`.
    * @returns An array of `{ "fileName": (number) size }`.
    */
-  async getFileSizes(root: '/' | string): Promise<Array<string>> {
+  async getFileSizes(root?: '/' | string): Promise<Array<string>> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/sizes`,
-      method: 'POST',
+      method: 'GET',
       data: { root: root },
     });
-    return endpoint;
+    return endpoint as Array<string>;
   }
 
   /**
@@ -783,7 +856,7 @@ class FileObject {
       url: `/client/servers/${this.uuid}/files/upload`,
       method: 'GET',
     });
-    return endpoint.data.attributes;
+    return endpoint.attributes.url as SignedUrlAttributes;
   }
 
   /**
@@ -815,18 +888,19 @@ class FileObject {
     return endpoint;
   }
 
-  // FIXME Unclear documentation
   /**
    * Writes the contents of the specified file to the server.
    *
    * @param contentToWrite - The content to write to the file.
    * @param filePath - The path of the file to write to.
    */
-  async writeFile(contentToWrite: string, filePath: string) {
+  async writeFile(filePath: string, contentToWrite: string) {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/write`,
       method: 'POST',
-      data: { file: filePath, contentToWrite },
+      params: { file: filePath },
+      headers: { 'Content-Type': 'text/plain' },
+      data: contentToWrite,
     });
     return endpoint;
   }
@@ -861,7 +935,6 @@ class FileObject {
     return endpoint;
   }
 
-  // FIXME Undocumented queries
   /**
    * Deletes files or folders for the server in the given root directory.
    *
@@ -938,7 +1011,7 @@ class FileObject {
   async renameFile(filePath: string, oldName: string, newName: string) {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/rename`,
-      method: 'POST',
+      method: 'PUT',
       data: { file: filePath, files: [{ from: oldName, to: newName }] },
     });
     return endpoint;
@@ -954,23 +1027,29 @@ class FileObject {
       url: `/client/servers/${this.uuid}/files/pulls`,
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as FilePullList;
   }
 
   /**
    * Starts a file pull in the background for the server.
    *
    * @param url - The URL to pull the file from.
-   * @param fileName - The name of the file to pull.
-   * @param root - The root directory to pull the file to.
-   * @param headers - Headers to use when pulling the file.
-   * @param foreground - Whether to run the pull in the foreground.
+   * @param fileName - The name of the file to pull, defaults to the name of the file.
+   * @param root - The root directory to pull the file to. defaults to `/`.
+   * @param headers - Headers to use when pulling the file. defaults to false.
+   * @param foreground - Whether to run the pull in the foreground. defaults to false.
    */
-  async startFilePull(url: string, fileName?: string, root?: '/' | string, headers?: string, foreground?: boolean) {
+  async startFilePull(
+    url: string,
+    fileName?: string,
+    root?: '/' | string,
+    use_headers?: boolean | false,
+    foreground?: boolean | false,
+  ) {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/files/pulls`,
       method: 'POST',
-      data: { url: url, root: root, name: fileName, use_header: headers, foreground: foreground },
+      data: { url: url, root: root, name: fileName, use_header: use_headers, foreground: foreground },
     });
     return endpoint;
   }
@@ -993,12 +1072,12 @@ class FileObject {
    *
    * @returns A promise that resolves to the list of operations.
    */
-  async getCurrentOperations(): Promise<string[]> {
+  async getCurrentOperations(): Promise<Operations> {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/operations`,
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint as Operations;
   }
 
   /**
@@ -1006,6 +1085,7 @@ class FileObject {
    *
    * @param operation - The operation to cancel.
    */
+  // FIXME: Clarify, is this operation the operation ID?
   async cancelOperation(operation: string) {
     const endpoint = await this.requestHandler.request({
       url: `/client/servers/${this.uuid}/operations/${operation}`,

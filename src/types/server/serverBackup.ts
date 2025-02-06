@@ -23,3 +23,15 @@ export interface BackupList {
   object: 'list';
   data: Backup[];
 }
+
+export interface BackupStatus {
+  id: number;
+  updated_time: number;
+  serverid: number;
+  action: string;
+  progress: number;
+  total_steps: number;
+  step: number;
+  date: string;
+  daemon_name: string;
+}
