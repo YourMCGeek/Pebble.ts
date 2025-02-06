@@ -15,7 +15,7 @@ export class ApiRequestHandler {
 
   constructor(apikey: string) {
     this.httpClient = axios.create({
-      baseURL: 'https://panel.pebblehost.com/api', // FIXME: Update documnetation
+      baseURL: 'https://panel.pebblehost.com/api', // FIXME: Update documentation
       headers: {
         Authorization: `Bearer ${apikey}`,
         'Content-Type': 'application/json',
