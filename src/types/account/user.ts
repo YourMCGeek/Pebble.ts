@@ -4,11 +4,9 @@ export interface RawUser {
 }
 
 export interface UserAttributes {
-  readonly id: number;
-  readonly admin: boolean;
-  readonly username: string;
+  id: number;
+  admin: boolean;
+  username: string;
   email: string;
-  readonly first_name: string;
-  readonly last_name: string;
-  readonly language: 'en' | string;
+  language: 'en' | string;
 }

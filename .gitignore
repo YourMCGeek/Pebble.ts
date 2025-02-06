@@ -6,5 +6,4 @@ package-lock.json
 .vscode
 generated
 *.yaml
-tests/api.env
-tests/curl
+tests

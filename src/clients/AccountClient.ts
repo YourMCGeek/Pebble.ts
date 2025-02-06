@@ -1,6 +1,7 @@
 import { ApiRequestHandler } from '../functions/ApiRequestHandler';
 import { ActivityLogResponse } from '../types/account/activityLog';
 import { ApiKey, ApiKeyListResponse } from '../types/account/apiKey';
+import { Permission, Permissions } from '../types/account/permissions';
 import { SshKey, SshKeyListResponse } from '../types/account/sshKey';
 import { UserAttributes } from '../types/account/user';
 import { DeletedServerResponse } from '../types/server/deletedServer';
@@ -22,7 +23,7 @@ export class AccountClient {
       url: '/client/account',
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint.attributes as UserAttributes;
   }
 
   /**
@@ -54,6 +55,10 @@ export class AccountClient {
    * @param code - The MFA code provided by the user.
    * @param password - The user's account password.
    * @returns A promise that resolves to an object containing recovery tokens.
+   * @throws {ValidationException} - If the code or password parameters are missing.
+   * @throws {ValidationException} - If the code provided is not 6 characters.
+   * @throws {InvalidPasswordException} - If the password provided is invalid.
+   * @throws {TwoFactoryAuthenticationTokenInvalid} - If the MFA code provided is invalid.
    */
   async enableMfa(
     code: number,
@@ -75,6 +80,7 @@ export class AccountClient {
    * @param password - The password of the account to authenticate the request.
    * @throws {Error} - Will throw an error if the password provided is invalid.
    */
+  // FIXME: Requires a MFA code as well?
   async disableMfa(password: string) {
     const endpoint = await this.api.request(
       {
@@ -106,18 +112,20 @@ export class AccountClient {
     page?: number,
     maxPerPage?: number,
   ): Promise<ActivityLogResponse> {
+    let params = {};
+    if (include) params = { ...params, include };
+    if (filters) params = { ...params, 'filters[event]': filters };
+    if (sortField) params = { ...params, sort: `${sortDescending ? '-' : ''}${sortField}` };
+    if (page) params = { ...params, page };
+    if (maxPerPage) params = { ...params, per_page: maxPerPage };
     const endpoint = await this.api.request({
       url: '/client/account/activity',
       method: 'GET',
       params: {
-        include,
-        'filters[event]': filters,
-        sort: `${sortDescending ? '-' + sortField : sortField}`,
-        page,
-        per_page: maxPerPage,
+        ...params,
       },
     });
-    return endpoint;
+    return endpoint as ActivityLogResponse;
   }
 
   /**
@@ -129,20 +137,23 @@ export class AccountClient {
    * @param maxPerPage - The maximum number of results per page.
    * @returns A promise that resolves to a {@link DeletedServerResponse} containing the list of deleted servers.
    */
+  // FIXME: Unclear documentation on target_restore_server
   async getDeletedServers(
     target_restore_server?: string,
     terminated_after?: string,
     page?: number,
     maxPerPage?: number,
   ): Promise<DeletedServerResponse> {
+    let params = {};
+    if (target_restore_server) params = { ...params, target_restore_server };
+    if (terminated_after) params = { ...params, 'filters[terminated_after]': terminated_after };
+    if (page) params = { ...params, page };
+    if (maxPerPage) params = { ...params, per_page: maxPerPage };
     const endpoint = await this.api.request({
       url: '/client/account/deleted-servers',
       method: 'GET',
       params: {
-        target_restore_server,
-        'filters[terminated_after]': terminated_after,
-        page,
-        per_page: maxPerPage,
+        ...params,
       },
     });
     return endpoint;
@@ -153,6 +164,7 @@ export class AccountClient {
    *
    * @param newPassword - The new password to set.
    */
+  // FIXME: Requires old password?
   async updatePassword(newPassword: string) {
     const endpoint = await this.api.request({
       url: '/client/account/password',
@@ -174,7 +186,7 @@ export class AccountClient {
       url: '/client/account/api-keys',
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as ApiKeyListResponse;
   }
 
   /**
@@ -185,15 +197,17 @@ export class AccountClient {
    * @returns A promise that resolves to an {@link ApiKey}.
    */
   async createApiKey(description: string, allowedIps: string[]): Promise<ApiKey> {
+    let params = {};
+    if (allowedIps) params = { ...params, allowed_ips: allowedIps };
     const endpoint = await this.api.request({
       url: '/client/account/api-keys',
       method: 'POST',
       data: {
         description,
-        allowed_ips: allowedIps,
+        ...params,
       },
     });
-    return endpoint;
+    return endpoint as ApiKey;
   }
 
   /**
@@ -219,7 +233,7 @@ export class AccountClient {
       url: '/client/account/ssh-keys',
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as SshKeyListResponse;
   }
 
   /**
@@ -239,7 +253,7 @@ export class AccountClient {
         public_key,
       },
     });
-    return endpoint;
+    return endpoint as SshKey;
   }
 
   /**
@@ -261,14 +275,12 @@ export class AccountClient {
    *
    * @returns A promise that resolves to the list of available permissions.
    */
-  async getAvailablePermissions(): Promise<{
-    attributes: Array<string[]>;
-  }> {
+  async getAvailablePermissions(): Promise<Permissions> {
     const endpoint = await this.api.request({
       url: '/client/permissions',
       method: 'GET',
     });
-    return endpoint.data;
+    return endpoint.attributes.permissions as Permissions;
   }
 
   /**
@@ -276,11 +288,11 @@ export class AccountClient {
    *
    * @returns The the ip address that made the request.
    */
-  async getMyIp() {
+  async getMyIp(): Promise<string> {
     const endpoint = await this.api.request({
       url: '/client/myip',
       method: 'GET',
     });
-    return endpoint;
+    return endpoint as string;
   }
 }
