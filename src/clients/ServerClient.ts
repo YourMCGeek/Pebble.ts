@@ -40,6 +40,7 @@ export class ServerClient {
    *
    * @returns A promise that resolves to {@link ServerListResponse}.
    */
+  // TODO Add filters
   async getServers(): Promise<ServerListResponse> {
     const endpoint = await this.requestHandler.request({
       url: '/client',
@@ -168,7 +169,6 @@ class ServerObject implements Server {
     return endpoint as ActivityLogResponse;
   }
 
-  // FIXME: Undocumented response
   /**
    * Fetches the activity filters for the server associated with this client.
    *
@@ -268,42 +268,6 @@ class ServerObject implements Server {
       url: `/client/servers/${this.attributes.uuid}/migration`,
       method: 'POST',
       data: { location: location },
-    });
-    return endpoint;
-  }
-
-  // TODO: Check to see if user is admin, if not, return error
-  /**
-   * (Admin-only) Returns the details of any ongoing migrations for a server.
-   *
-   * @todo Check to see if user is admin, if not, return error
-   */
-  // FIXME: Returns forbidden
-  async getMigrationDetails(): Promise<MigrationDetails> {
-    const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.attributes.uuid}/migration/details`,
-      method: 'GET',
-    });
-    return endpoint as MigrationDetails;
-  }
-
-  // TODO: Check to see if user is admin, if not, return error
-  /**
-   * (Admin-only) Starts a transfer of a server to a new node, keeping the same IP.
-   *
-   * @param newNodeId - The ID of the new node to which the server will be transferred.
-   * @todo Check to see if user is admin, if not, return error
-   * @throws {Error} If the newNodeId parameter is missing.
-   */
-  // FIXME: Returns forbidden
-  async startTransfer(newNodeId: string) {
-    if (!newNodeId) {
-      return Promise.reject(new Error('The newNodeId parameter is required.'));
-    }
-    const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.attributes.uuid}/migration/transfer`,
-      method: 'POST',
-      data: { node_id: newNodeId },
     });
     return endpoint;
   }
@@ -976,7 +940,7 @@ class FileObject {
    */
   async changePermission(fileName: string, mode: number | string, root?: '/' | string) {
     const endpoint = await this.requestHandler.request({
-      url: `/client/servers/${this.uuid}/files/permissions`,
+      url: `/client/servers/${this.uuid}/files/chmod`,
       method: 'POST',
       data: { root: root, files: [{ file: fileName, mode: mode.toString }] },
     });
