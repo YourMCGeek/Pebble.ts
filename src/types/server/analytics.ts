@@ -1,10 +1,10 @@
 interface AnalyticsData {
-  t: number;
-  c: number;
-  m: number;
-  i: number;
-  o: number;
-  d: number;
+  t: number; // Timestamp
+  c: number; // CPU
+  m: number; // Memory
+  i: number; // Network In
+  o: number; // Network Out
+  d: number; // Disk Usage
 }
 
 export { AnalyticsData };
