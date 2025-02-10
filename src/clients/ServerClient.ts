@@ -2,7 +2,7 @@ import { ApiRequestHandler } from '../functions/ApiRequestHandler';
 import { ActivityLogResponse } from '../types/account/activityLog';
 import { SignedUrlAttributes } from '../types/misc/signedUrl';
 import { BackupList, BackupStatus } from '../types/server/serverBackup';
-import { DatabaseList, DatabasePassword, ServerDatabase, ServerDatabaseAttributes } from '../types/server/database';
+import { DatabaseList, ServerDatabaseAttributes } from '../types/server/database';
 import {
   ServerListResponse,
   ServerAttributes,
@@ -18,11 +18,19 @@ import { DatabaseBackupList } from '../types/server/databaseBackup';
 import { FileObjectList, FilePullList } from '../types/server/files';
 import { EventsAndActors } from '../types/server/activityFilters';
 import { AnalyticsData } from '../types/server/analytics';
-import { MigrationDetails } from '../types/server/migration';
 import { Preinstalls } from '../types/server/preinstalls';
 import { ProjectEggVariable, ProjectList } from '../types/server/projects';
 import { Notices } from '../types/server/notices';
 import { Operations } from '../types/server/operations';
+import {
+  AdpAnalytics,
+  AdpASNFirewallRule,
+  AdpCountryFirewallRule,
+  AdpDetails,
+  AdpGraphData,
+  AdpIpFirewallRule,
+  AdpSettings,
+} from '../types/server/adp';
 
 /**
  * Represents a client for interacting with the server API.

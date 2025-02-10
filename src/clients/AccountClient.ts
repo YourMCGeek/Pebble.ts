@@ -1,8 +1,6 @@
 import { ApiRequestHandler } from '../functions/ApiRequestHandler';
 import { ActivityLogResponse } from '../types/account/activityLog';
-import { ApiKey, ApiKeyListResponse } from '../types/account/apiKey';
-import { Permission, Permissions } from '../types/account/permissions';
-import { SshKey, SshKeyListResponse } from '../types/account/sshKey';
+import { Permissions } from '../types/account/permissions';
 import { UserAttributes } from '../types/account/user';
 import { DeletedServerResponse } from '../types/server/deletedServer';
 
@@ -64,7 +62,7 @@ export class AccountClient {
   /**
    * Retrieves a list of deleted servers based on the specified filters.
    *
-   * @param target_restore_server - The identifier of the target restore server.
+   * @param target_restore_server - The identifier of the active server you want to restore to.
    * @param terminated_after - The date after which the servers were terminated (ISO 8601 format).
    * @param page - The page number to retrieve.
    * @param maxPerPage - The maximum number of results per page.
