@@ -93,6 +93,7 @@ class ServerObject implements Server {
   private _backups: BackupsObject | null = null;
   private _databses: DatabaseObject | null = null;
   private _files: FileObject | null = null;
+  private _adp: AdvancedDDoSProtectionObject | null = null;
 
   get databases(): DatabaseObject {
     if (!this._databses) {
@@ -113,6 +114,13 @@ class ServerObject implements Server {
       this._backups = new BackupsObject(this.requestHandler, this.attributes.uuid);
     }
     return this._backups;
+  }
+
+  get adp(): AdvancedDDoSProtectionObject {
+    if (!this._adp) {
+      this._adp = new AdvancedDDoSProtectionObject(this.requestHandler, this.attributes.uuid);
+    }
+    return this._adp;
   }
 
   /**
@@ -369,6 +377,7 @@ class ServerObject implements Server {
    * Returns a list of Node.js versions that can be selected by Node.js Bots.
    *
    * @returns A promise that resolves to an array of Node.js versions.
+   * @throws {Error} Throws an error if the server is not a Bot hosting server.
    */
   // FIXME: Update Route for consistency
   // FIXME: Returns forbidden
@@ -377,6 +386,9 @@ class ServerObject implements Server {
       url: `/client/servers/${this.attributes.uuid}/bot-node-versions`,
       method: 'GET',
     });
+    if (endpoint.code === 'ERR_BAD_REQUEST') {
+      throw new Error('This endpoint is only available for Bot hosting servers.');
+    }
     return endpoint;
   }
 
@@ -1064,5 +1076,246 @@ class FileObject {
       method: 'DELETE',
     });
     return endpoint;
+  }
+}
+
+class AdvancedDDoSProtectionObject {
+  private requestHandler: ApiRequestHandler;
+  private uuid: string;
+
+  constructor(api: ApiRequestHandler, uuid: string) {
+    this.requestHandler = api;
+    this.uuid = uuid;
+  }
+
+  /**
+   * Fetches the ADP (Advanced DDoS Protection) details for the server associated with this client.
+   *
+   * @returns {Promise<AdpDetails>} A promise that resolves to the ADP details of the server.
+   */
+  async getDetails(): Promise<AdpDetails> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp`,
+      method: 'GET',
+    });
+    return endpoint as AdpDetails;
+  }
+
+  /**
+   * Enables ADP (Advanced DDoS Protection) for the specified domain.
+   *
+   * @param domain - The domain to enable ADP for.
+   * @param isPebbleSubdomain - Whether the domain is a Pebblehost subdomain.
+   * @returns {Promise<AdpDetails>} A promise that resolves to the updated ADP details.
+   */
+  async enableProtection(domain: string, isPebbleSubdomain: boolean): Promise<AdpDetails> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/adp`,
+      method: 'POST',
+      params: { domain: domain, is_pebble_subdomain: isPebbleSubdomain, server: this.uuid },
+    });
+    return endpoint as AdpDetails;
+  }
+
+  // TODO Update Protection via Builder
+
+  /**
+   * Disables ADP (Advanced DDoS Protection) for the server.
+   */
+  async disableProtection() {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp`,
+      method: 'DELETE',
+      params: { server: this.uuid },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Fetches the ADP (Advanced DDoS Protection) settings for the Minecraft server.
+   *
+   * @returns {Promise<AdpSettings>} A promise that resolves to the ADP settings.
+   */
+  async getADPSettings(): Promise<AdpSettings> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/settings`,
+      method: 'GET',
+    });
+    return endpoint as AdpSettings;
+  }
+
+  /**
+   * Fetches the ADP (Advanced DDoS Protection) analytics data.
+   *
+   * @returns {Promise<AdpAnalytics>} A promise that resolves to the ADP analytics data.
+   */
+  async getAnalytics(): Promise<AdpAnalytics> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/analytics`,
+      method: 'GET',
+    });
+    return endpoint as AdpAnalytics;
+  }
+
+  /**
+   * Fetches the ADP (Advanced DDoS Protection) graph data.
+   *
+   * @returns {Promise<AdpGraphData>} A promise that resolves to the ADP graph data.
+   */
+  async getGraphsData(): Promise<AdpGraphData> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/graphs`,
+      method: 'GET',
+    });
+    return endpoint as AdpGraphData;
+  }
+
+  /**
+   * Verifies the ADP (Advanced DDoS Protection) configuration.
+   *
+   */
+  async verify() {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/verify`,
+      method: 'POST',
+    });
+    return endpoint;
+  }
+
+  /**
+   * Fetches the IP firewall rules for the server.
+   *
+   * @returns {Promise<AdpIpFirewallRule>} A promise that resolves to the IP firewall rules.
+   */
+  async getIPFirewallRules(): Promise<AdpIpFirewallRule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/firewall`,
+      method: 'GET',
+    });
+    return endpoint as AdpIpFirewallRule;
+  }
+
+  /**
+   * Creates an IP firewall rule for the specified CIDR.
+   * @param cidr - The CIDR notation for the IP address or range.
+   * @param whitelist - Indicates whether the rule should be a whitelist (true) or blacklist (false).
+   * @returns {Promise<AdpIpFirewallRule>} A promise that resolves to the created firewall rule's details.
+   */
+  async createIPFirewallRule(cidr: string, whitelist: boolean): Promise<AdpIpFirewallRule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/firewall`,
+      method: 'POST',
+      params: { cidr: cidr, whitelist: whitelist },
+    });
+    return endpoint as AdpIpFirewallRule;
+  }
+
+  /**
+   * Deletes an IP firewall rule for the server.
+   *
+   * @param ruleId - The ID of the firewall rule to delete.
+   * @returns A promise that resolves to an object containing the status and message of the deletion operation.
+   */
+  async deleteIPFirewallRule(ruleId: string): Promise<{
+    status: number;
+    message: string;
+  }> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/firewall/${ruleId}`,
+      method: 'DELETE',
+    });
+    return endpoint as { status: number; message: string };
+  }
+
+  /**
+   * Retrieves the ASN firewall rules for the server.
+   *
+   * @returns {Promise<AdpASNFirewallRule>} A promise that resolves to the ASN firewall rules.
+   */
+  async getASNFirewallRules(): Promise<AdpASNFirewallRule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/asnFirewall`,
+      method: 'GET',
+    });
+    return endpoint as AdpASNFirewallRule;
+  }
+
+  /**
+   * Creates an ASN firewall rule for the server.
+   *
+   * @param asn - The Autonomous System Number (ASN) to be added to the firewall rule.
+   * @param whitelist - A boolean indicating whether the ASN should be whitelisted (true) or blacklisted (false).
+   * @returns {Promise<AdpASNFirewallRule>} A promise that resolves to the created firewall rule's details.
+   */
+  async createASNFirewallRule(asn: number, whitelist: boolean): Promise<AdpASNFirewallRule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/asnFirewall`,
+      method: 'POST',
+      params: { asn: asn, whitelist: whitelist },
+    });
+    return endpoint as AdpASNFirewallRule;
+  }
+
+  /**
+   * Deletes an ASN firewall rule for the server.
+   *
+   * @param ruleId - The unique identifier of the ASN firewall rule to be deleted.
+   * @returns A promise that resolves to an object containing the status and message of the deletion operation.
+   */
+  async deleteASNFirewallRule(ruleId: string): Promise<{
+    status: number;
+    message: string;
+  }> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/asnFirewall/${ruleId}`,
+      method: 'DELETE',
+    });
+    return endpoint as { status: number; message: string };
+  }
+
+  /**
+   * Retrieves the country firewall rules for the Minecraft server associated with this client.
+   *
+   * @returns {Promise<AdpCountryFirewallRule>} A promise that resolves to the country firewall rules.
+   */
+  async getCountryFirewallRules(): Promise<AdpCountryFirewallRule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/countryFirewall`,
+      method: 'GET',
+    });
+    return endpoint as AdpCountryFirewallRule;
+  }
+
+  /**
+   * Creates a country firewall rule for the server.
+   *
+   * @param countryCode - The country code for which the firewall rule is to be created.
+   * @param whitelist - A boolean indicating whether the rule is a whitelist (true) or a blacklist (false).
+   * @returns {Promise<AdpCountryFirewallRule>} A promise that resolves to the created firewall rule's details.
+   */
+  async createCountryFirewallRule(countryCode: string, whitelist: boolean): Promise<AdpCountryFirewallRule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/countryFirewall`,
+      method: 'POST',
+      params: { country_id: countryCode, whitelist: whitelist },
+    });
+    return endpoint as AdpCountryFirewallRule;
+  }
+
+  /**
+   * Deletes a country firewall rule for the server.
+   *
+   * @param ruleId - The unique identifier of the firewall rule to be deleted.
+   * @returns A promise that resolves to an object containing the status and message of the deletion operation.
+   */
+  async deleteCountryFirewallRule(ruleId: string): Promise<{
+    status: number;
+    message: string;
+  }> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/adp/countryFirewall/${ruleId}`,
+      method: 'DELETE',
+    });
+    return endpoint as { status: number; message: string };
   }
 }
