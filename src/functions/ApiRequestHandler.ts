@@ -28,15 +28,10 @@ export class ApiRequestHandler {
       status: 401,
       message: 'Unauthorized. Please confirm that a valid API token is being passed.',
     },
-    /* { status: 403, message: 'Forbidden.' }, */
     {
       status: 405,
       message: 'Method not allowed. Please report this to the Wrapper developer.',
     },
-    /* {
-      status: 502,
-      message: 'Daemon is unreachable. Please try again in a few minutes or contact support.',
-    }, */
   ];
 
   /**

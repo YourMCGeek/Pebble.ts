@@ -29,6 +29,12 @@ for (const file of serverFiles) {
   res.push(`export * from "./types/server/${file.split('.')[0]}";`);
 }
 
+res.push(`\n/* types/server/minecraft */`);
+const minecraftFiles = readdirSync(`./src/types/server/minecraft`).filter((file) => file.endsWith('.ts'));
+for (const file of minecraftFiles) {
+  res.push(`export * from "./types/server/minecraft/${file.split('.')[0]}";`);
+}
+
 res.push(`\n/* types/misc */`);
 const miscFiles = readdirSync(`./src/types/misc`).filter((file) => file.endsWith('.ts'));
 for (const file of miscFiles) {

@@ -31,6 +31,17 @@ import {
   AdpIpFirewallRule,
   AdpSettings,
 } from '../types/server/adp';
+import { FirewallList, ServerFirewall } from '../types/server/firewall';
+import { MinecraftModpack, ModpackList, ModpackVersions } from '../types/server/minecraft/modpack';
+import {
+  BannedIP,
+  BannedPlayer,
+  OpPlayer,
+  PlayerInfo,
+  ServerPlayersResponse,
+  Whitelist,
+} from '../types/server/minecraft/players';
+import { MinecraftPluginList, MinecraftPluginVersionList } from '../types/server/minecraft/plugins';
 
 /**
  * Represents a client for interacting with the server API.
@@ -94,6 +105,8 @@ class ServerObject implements Server {
   private _databses: DatabaseObject | null = null;
   private _files: FileObject | null = null;
   private _adp: AdvancedDDoSProtectionObject | null = null;
+  private _firewall: FirewallObject | null = null;
+  private _minecraft: MinecraftObject | null = null;
 
   get databases(): DatabaseObject {
     if (!this._databses) {
@@ -121,6 +134,20 @@ class ServerObject implements Server {
       this._adp = new AdvancedDDoSProtectionObject(this.requestHandler, this.attributes.uuid);
     }
     return this._adp;
+  }
+
+  get firewall(): FirewallObject {
+    if (!this._firewall) {
+      this._firewall = new FirewallObject(this.requestHandler, this.attributes.uuid);
+    }
+    return this.firewall;
+  }
+
+  get minecraft(): MinecraftObject {
+    if (!this._minecraft) {
+      this._minecraft = new MinecraftObject(this.requestHandler, this.attributes.uuid);
+    }
+    return this._minecraft;
   }
 
   /**
@@ -1121,6 +1148,8 @@ class AdvancedDDoSProtectionObject {
 
   /**
    * Disables ADP (Advanced DDoS Protection) for the server.
+   *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    */
   async disableProtection() {
     const endpoint = await this.requestHandler.request({
@@ -1134,6 +1163,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Fetches the ADP (Advanced DDoS Protection) settings for the Minecraft server.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpSettings>} A promise that resolves to the ADP settings.
    */
   async getADPSettings(): Promise<AdpSettings> {
@@ -1147,6 +1177,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Fetches the ADP (Advanced DDoS Protection) analytics data.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpAnalytics>} A promise that resolves to the ADP analytics data.
    */
   async getAnalytics(): Promise<AdpAnalytics> {
@@ -1160,6 +1191,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Fetches the ADP (Advanced DDoS Protection) graph data.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpGraphData>} A promise that resolves to the ADP graph data.
    */
   async getGraphsData(): Promise<AdpGraphData> {
@@ -1173,6 +1205,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Verifies the ADP (Advanced DDoS Protection) configuration.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    */
   async verify() {
     const endpoint = await this.requestHandler.request({
@@ -1185,6 +1218,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Fetches the IP firewall rules for the server.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpIpFirewallRule>} A promise that resolves to the IP firewall rules.
    */
   async getIPFirewallRules(): Promise<AdpIpFirewallRule> {
@@ -1199,6 +1233,7 @@ class AdvancedDDoSProtectionObject {
    * Creates an IP firewall rule for the specified CIDR.
    * @param cidr - The CIDR notation for the IP address or range.
    * @param whitelist - Indicates whether the rule should be a whitelist (true) or blacklist (false).
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpIpFirewallRule>} A promise that resolves to the created firewall rule's details.
    */
   async createIPFirewallRule(cidr: string, whitelist: boolean): Promise<AdpIpFirewallRule> {
@@ -1214,6 +1249,7 @@ class AdvancedDDoSProtectionObject {
    * Deletes an IP firewall rule for the server.
    *
    * @param ruleId - The ID of the firewall rule to delete.
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns A promise that resolves to an object containing the status and message of the deletion operation.
    */
   async deleteIPFirewallRule(ruleId: string): Promise<{
@@ -1230,6 +1266,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Retrieves the ASN firewall rules for the server.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpASNFirewallRule>} A promise that resolves to the ASN firewall rules.
    */
   async getASNFirewallRules(): Promise<AdpASNFirewallRule> {
@@ -1245,6 +1282,7 @@ class AdvancedDDoSProtectionObject {
    *
    * @param asn - The Autonomous System Number (ASN) to be added to the firewall rule.
    * @param whitelist - A boolean indicating whether the ASN should be whitelisted (true) or blacklisted (false).
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpASNFirewallRule>} A promise that resolves to the created firewall rule's details.
    */
   async createASNFirewallRule(asn: number, whitelist: boolean): Promise<AdpASNFirewallRule> {
@@ -1260,6 +1298,7 @@ class AdvancedDDoSProtectionObject {
    * Deletes an ASN firewall rule for the server.
    *
    * @param ruleId - The unique identifier of the ASN firewall rule to be deleted.
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns A promise that resolves to an object containing the status and message of the deletion operation.
    */
   async deleteASNFirewallRule(ruleId: string): Promise<{
@@ -1276,6 +1315,7 @@ class AdvancedDDoSProtectionObject {
   /**
    * Retrieves the country firewall rules for the Minecraft server associated with this client.
    *
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpCountryFirewallRule>} A promise that resolves to the country firewall rules.
    */
   async getCountryFirewallRules(): Promise<AdpCountryFirewallRule> {
@@ -1291,6 +1331,7 @@ class AdvancedDDoSProtectionObject {
    *
    * @param countryCode - The country code for which the firewall rule is to be created.
    * @param whitelist - A boolean indicating whether the rule is a whitelist (true) or a blacklist (false).
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns {Promise<AdpCountryFirewallRule>} A promise that resolves to the created firewall rule's details.
    */
   async createCountryFirewallRule(countryCode: string, whitelist: boolean): Promise<AdpCountryFirewallRule> {
@@ -1306,6 +1347,7 @@ class AdvancedDDoSProtectionObject {
    * Deletes a country firewall rule for the server.
    *
    * @param ruleId - The unique identifier of the firewall rule to be deleted.
+   * @throws {Error} Throws an error if the server does not have ADP enabled.
    * @returns A promise that resolves to an object containing the status and message of the deletion operation.
    */
   async deleteCountryFirewallRule(ruleId: string): Promise<{
@@ -1317,5 +1359,470 @@ class AdvancedDDoSProtectionObject {
       method: 'DELETE',
     });
     return endpoint as { status: number; message: string };
+  }
+}
+
+class FirewallObject {
+  private requestHandler: ApiRequestHandler;
+  private uuid: string;
+
+  constructor(requestHandler: ApiRequestHandler, uuid: string) {
+    this.requestHandler = requestHandler;
+    this.uuid = uuid;
+  }
+
+  async getRules(): Promise<FirewallList[]> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/firewall`,
+      method: 'GET',
+    });
+    return endpoint as FirewallList[];
+  }
+
+  async createRule(ip: string, port: number, priorty: string, allow: boolean): Promise<ServerFirewall> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/firewall`,
+      method: 'POST',
+      params: { ip: ip, port: port, priority: priorty, allow: allow },
+    });
+    return endpoint as ServerFirewall;
+  }
+
+  async getRuleById(id: number): Promise<ServerFirewall> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/firewall/${id}`,
+      method: 'GET',
+    });
+    return endpoint as ServerFirewall;
+  }
+
+  async updateRule(id: number, ip: string, port: number, priority: string, allow: boolean): Promise<ServerFirewall> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/firewall/${id}`,
+      method: 'POST',
+      params: { ip: ip, port: port, priority: priority, allow: allow },
+    });
+    return endpoint as ServerFirewall;
+  }
+
+  async deleteRule(id: number) {
+    await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/firewall/${id}`,
+      method: 'DELETE',
+    });
+  }
+}
+
+class MinecraftObject {
+  private requestHandler: ApiRequestHandler;
+  private uuid: string;
+
+  constructor(api: ApiRequestHandler, uuid: string) {
+    this.requestHandler = api;
+    this.uuid = uuid;
+  }
+
+  async testVotifier(
+    type: string,
+    host: string,
+    port: number,
+    username: string,
+    public_key: string,
+    token: string,
+  ): Promise<string> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/votifier/test`,
+      method: 'POST',
+      data: { type: type, host: host, port: port, username: username, public_key: public_key, token: token },
+    });
+    if (endpoint.status === 500) {
+      return endpoint.error as string;
+    }
+    return endpoint.message as string;
+  }
+
+  // FIXME: Missing response
+  async searchModpacks(
+    provider?: string,
+    page?: number | 1,
+    pageSize?: number | 25,
+    searchQuery?: string,
+  ): Promise<ModpackList> {
+    if (pageSize && pageSize > 50) {
+      throw new Error('Page Size cannot be greater than 50');
+    }
+
+    if (provider && !['curseforge', 'ftb', 'modrinth', 'atlauncher'].includes(provider)) {
+      throw new Error('Invalid provider specified. Available values are curseforge, ftb, modrinth, and atlauncher.');
+    }
+
+    if (page && page < 1) {
+      throw new Error('Page number must be greater than or equal to 1');
+    }
+
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/modpacks`,
+      method: 'GET',
+      params: { provider: provider, page: page, page_size: pageSize, search: searchQuery },
+    });
+    return endpoint as ModpackList;
+  }
+
+  // FIXME: Provider is required
+  async getModpackById(modpackId: string, provider: string): Promise<MinecraftModpack> {
+    if (provider && !['curseforge', 'ftb', 'modrinth', 'atlauncher'].includes(provider)) {
+      throw new Error('Invalid provider specified. Available values are curseforge, ftb, modrinth, and atlauncher.');
+    }
+
+    if (!modpackId || modpackId.length < 0) {
+      throw new Error('Modpack ID is required and must be at least 1 character.');
+    }
+
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/modpacks/modpack`,
+      method: 'GET',
+      params: { provider: provider, modpack_id: modpackId },
+    });
+    return endpoint as MinecraftModpack;
+  }
+
+  // FIXME: Curseforge url = #
+  async getModpackVersions(modpackId: string, provider: string): Promise<ModpackVersions[]> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/modpacks/versions`,
+      method: 'GET',
+      params: { provider: provider, modpack_id: modpackId },
+    });
+    return endpoint as ModpackVersions[];
+  }
+
+  // FIXME: Returns 419 CSRF token mismatch? Check if this is correct
+  async installModpack(provider: string, modpackId: string, modpackVersionId: string, deleteServerFiles: boolean) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/modpacks/install`,
+      method: 'POST',
+      data: {
+        provider: provider,
+        modpack_id: modpackId,
+        modpack_version_id: modpackVersionId,
+        delete_server_files: deleteServerFiles,
+      },
+    });
+    return endpoint;
+  }
+
+  async getPlayers(): Promise<ServerPlayersResponse> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint as ServerPlayersResponse;
+  }
+
+  async enableWhitelist() {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/whitelist/status`,
+      method: 'POST',
+      data: { enabled: true },
+    });
+    return endpoint;
+  }
+
+  async disableWhitelist() {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/whitelist/status`,
+      method: 'POST',
+      data: { enabled: false },
+    });
+    return endpoint;
+  }
+
+  async whitelistPlayer(username: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/whitelist`,
+      method: 'PUT',
+      data: { name: username },
+    });
+    return endpoint;
+  }
+
+  // FIXME: Confirm this is UUID and not username
+  async unwhitelistPlayer(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/whitelist/`,
+      method: 'DELETE',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  async opPlayer(username: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/op`,
+      method: 'PUT',
+      data: { name: username },
+    });
+    return endpoint;
+  }
+
+  async deopPlayer(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/op`,
+      method: 'DELETE',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  async banPlayer(name: string, reason: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/ban`,
+      method: 'PUT',
+      data: { name: name, reason: reason },
+    });
+    return endpoint;
+  }
+
+  async unbanPlayer(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/ban`,
+      method: 'DELETE',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  async banIP(ip: string, reason: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/ban-ip`,
+      method: 'PUT',
+      data: { ip: ip, reason: reason },
+    });
+    return endpoint;
+  }
+
+  async unbanIP(ip: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/ban-ip`,
+      method: 'DELETE',
+      data: { ip: ip },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Ban a player by their IP from the server.
+   *
+   * @param uuid - The UUID of the player to ban.
+   * @throws {PlayerOfflineException} Throws an error if the player is offline.
+   */
+  async banPlayerIp(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/ban-ip-player`,
+      method: 'PUT',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Kicks a player from the server.
+   *
+   * @param uuid - The UUID of the player to kick.
+   * @param reason - The reason for kicking the player.
+   * @throws {PlayerOfflineException} Throws an error if the player is offline.
+   */
+  async kickPlayer(uuid: string, reason: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/kick`,
+      method: 'POST',
+      data: { uuid: uuid, reason: reason },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Clears the inventory of a player.
+   *
+   * @param uuid - The UUID of the player to clear the inventory of.
+   * @throws {PlayerOfflineException} Throws an error if the player is offline.
+   */
+  async clearInventory(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/clear`,
+      method: 'POST',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Wipes the data of a player from the server.
+   *
+   * @param uuid - The UUID of the player to wipe data for.
+   * @throws {PlayerOfflineException} Throws an error if the player is offline.
+   */
+  async wipePlayerData(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/wipe`,
+      method: 'POST',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Sends a private message to a player on the server.
+   *
+   * @param uuid - The UUID of the player to message.
+   * @throws {PlayerOfflineException} Throws an error if the player is offline.
+   */
+  async whisperPlayer(uuid: string, message: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/whisper`,
+      method: 'POST',
+      data: { uuid: uuid, message: message },
+    });
+    return endpoint;
+  }
+
+  /**
+   * Kills a player on the server.
+   *
+   * @param uuid - The UUID of the player to kill
+   * @throws {PlayerOfflineException} Throws an error if the player is offline.
+   */
+  async killPlayer(uuid: string) {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/kill`,
+      method: 'POST',
+      data: { uuid: uuid },
+    });
+    return endpoint;
+  }
+
+  async searchPlugins(
+    provider: string,
+    page: number | 1,
+    pageSize: number | 25,
+    searchQuery?: string,
+    minecraftVersion?: string,
+  ): Promise<MinecraftPluginList> {
+    if (pageSize && pageSize > 50) {
+      throw new Error('Page Size cannot be greater than 50');
+    }
+    if (page && page < 1) {
+      throw new Error('Page number must be greater than or equal to 1');
+    }
+    if (provider && !['curseforge', 'hangar', 'modrinth', 'spigotmc'].includes(provider)) {
+      throw new Error('Invalid provider specified. Available values are curseforge, hangar, modrinth, and spigotmc.');
+    }
+    let params = {};
+    if (searchQuery) {
+      params = { ...params, search: searchQuery };
+    }
+
+    if (minecraftVersion) {
+      params = { ...params, version: minecraftVersion };
+    }
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/plugins`,
+      method: 'GET',
+      params: { provider: provider, page: page, page_size: pageSize, ...params },
+    });
+    return endpoint as MinecraftPluginList;
+  }
+
+  async getPluginVersion(provider: string, pluginId: string): Promise<MinecraftPluginVersionList> {
+    if (provider && !['curseforge', 'hangar', 'modrinth', 'spigotmc'].includes(provider)) {
+      throw new Error('Invalid provider specified. Available values are curseforge, hangar, modrinth, and spigotmc.');
+    }
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/plugins/versions`,
+      method: 'GET',
+      params: { provider: provider, pluginId: pluginId },
+    });
+    return endpoint as MinecraftPluginVersionList;
+  }
+
+  async installPlugin(provider: string, pluginId: string, pluginName: string, versionId: string) {
+    if (provider && !['curseforge', 'hangar', 'modrinth', 'spigotmc'].includes(provider)) {
+      throw new Error('Invalid provider specified. Available values are curseforge, hangar, modrinth, and spigotmc.');
+    }
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/plugins/install`,
+      method: 'POST',
+      data: {
+        provider: provider,
+        pluginId: pluginId,
+        pluginName: pluginName,
+        versionId: versionId,
+      },
+    });
+    return endpoint;
+  }
+
+  async getWhitelist(): Promise<Whitelist> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.whitelist as Whitelist;
+  }
+
+  async getOps(): Promise<OpPlayer[]> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.oppped as OpPlayer[];
+  }
+
+  async getBannedPlayers(): Promise<BannedPlayer[]> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.banned.players as BannedPlayer[];
+  }
+
+  async getBannedIps(): Promise<BannedIP[]> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.banned.ips as BannedIP[];
+  }
+
+  async getOnlinePlayers(): Promise<PlayerInfo[]> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.players.list as PlayerInfo[];
+  }
+
+  async getOnlinePlayerCount(): Promise<number> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.players.online as number;
+  }
+
+  async getMaxPlayerCount(): Promise<number> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players`,
+      method: 'GET',
+    });
+    return endpoint.players.max as number;
+  }
+
+  async getWhitelistStatus(): Promise<boolean> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/minecraft/players/`,
+      method: 'GET',
+    });
+    return endpoint.whitelist.enabled as boolean;
   }
 }
