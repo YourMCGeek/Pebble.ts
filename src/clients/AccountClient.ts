@@ -87,7 +87,7 @@ export class AccountClient {
         ...params,
       },
     });
-    return endpoint;
+    return endpoint as DeletedServerResponse;
   }
 
   /**

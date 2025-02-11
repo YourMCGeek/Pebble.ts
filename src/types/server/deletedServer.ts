@@ -1,3 +1,5 @@
+import { Pagination } from '../misc/searchMeta';
+
 interface DeletedServerResponse {
   object: 'list';
   data: DeletedServer[];
@@ -17,15 +19,6 @@ interface DeletedServer {
     port: number;
     terminated_at: string;
   };
-}
-
-interface Pagination {
-  total: number;
-  count: number;
-  per_page: number;
-  current_page: number;
-  total_pages: number;
-  links: {};
 }
 
 export { DeletedServerResponse, DeletedServer };

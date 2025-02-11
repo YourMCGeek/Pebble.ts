@@ -1,3 +1,5 @@
+import { Pagination } from "../misc/searchMeta";
+
 export interface ResourceDetails {
   memory_bytes: number;
   cpu_absolute: number;
@@ -115,15 +117,6 @@ export interface ServerAttributes {
 export interface Server {
   object: 'server';
   attributes: ServerAttributes;
-}
-
-export interface Pagination {
-  total: number;
-  count: number;
-  per_page: number;
-  current_page: number;
-  total_pages: number;
-  links: {};
 }
 
 export interface ServerListResponse {

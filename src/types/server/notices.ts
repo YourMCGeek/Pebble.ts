@@ -12,13 +12,13 @@ export interface ResourceAnalytics {
   memory_at_time: number;
 }
 
-export interface Modpack {
+export interface ModpackNotice {
   id: number;
 }
 
 export interface ModpackUpdate {
   installed: string;
-  modpack: Modpack;
+  modpack: ModpackNotice;
 }
 
 export interface Notices {
