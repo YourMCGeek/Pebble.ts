@@ -13,6 +13,7 @@ import {
   FeatureLimits,
   Relationships,
   Node,
+  Allocation,
 } from '../types/server/server';
 import { DatabaseBackupList } from '../types/server/databaseBackup';
 import { FileObjectList, FilePullList } from '../types/server/files';
@@ -42,6 +43,9 @@ import {
   Whitelist,
 } from '../types/server/minecraft/players';
 import { MinecraftPluginList, MinecraftPluginVersionList } from '../types/server/minecraft/plugins';
+import { AllocationList } from '../types/server/allocations';
+import { ScheduleTask, ServerSchedule, ServerScheduleList } from '../types/server/schedules';
+import { EggVariable, EggVariableList } from '../types/server/startup';
 
 /**
  * Represents a client for interacting with the server API.
@@ -107,6 +111,9 @@ class ServerObject implements Server {
   private _adp: AdvancedDDoSProtectionObject | null = null;
   private _firewall: FirewallObject | null = null;
   private _minecraft: MinecraftObject | null = null;
+  private _networking: NetworkObject | null = null;
+  private _schedules: SchedulesObject | null = null;
+  private _startup: StartupObject | null = null;
 
   get databases(): DatabaseObject {
     if (!this._databses) {
@@ -150,6 +157,26 @@ class ServerObject implements Server {
     return this._minecraft;
   }
 
+  get allocations(): NetworkObject {
+    if (!this._networking) {
+      this._networking = new NetworkObject(this.requestHandler, this.attributes.uuid);
+    }
+    return this._networking;
+  }
+
+  get schedules(): SchedulesObject {
+    if (!this._schedules) {
+      this._schedules = new SchedulesObject(this.requestHandler, this.attributes.uuid);
+    }
+    return this._schedules;
+  }
+
+  get startup(): StartupObject {
+    if (!this._startup) {
+      this._startup = new StartupObject(this.requestHandler, this.attributes.uuid);
+    }
+    return this._startup;
+  }
   /**
    * Retrieves the server attributes.
    *
@@ -1824,5 +1851,227 @@ class MinecraftObject {
       method: 'GET',
     });
     return endpoint.whitelist.enabled as boolean;
+  }
+}
+
+class NetworkObject {
+  private requestHandler: ApiRequestHandler;
+  private uuid: string;
+
+  constructor(requestHandler: ApiRequestHandler, uuid: string) {
+    this.requestHandler = requestHandler;
+    this.uuid = uuid;
+  }
+
+  async getAllocations(): Promise<AllocationList> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/network/allocations`,
+      method: 'GET',
+    });
+    return endpoint as AllocationList;
+  }
+
+  async addAllocation(): Promise<Allocation> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/network/allocations`,
+      method: 'POST',
+    });
+    return endpoint as Allocation;
+  }
+
+  async updateAllocation(id: number, port?: number, note?: string): Promise<Allocation> {
+    let params = {};
+    if (port) params = { ...params, port };
+    if (note) params = { ...params, note };
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/network/allocations/${id}`,
+      method: 'POST',
+      data: params,
+    });
+    return endpoint as Allocation;
+  }
+
+  async updatePrimaryAllocation(id: number): Promise<Allocation> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/network/allocations/${id}`,
+      method: 'PUT',
+    });
+    return endpoint as Allocation;
+  }
+
+  async deleteAllocation(id: number): Promise<void> {
+    await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/network/allocations/${id}`,
+      method: 'DELETE',
+    });
+  }
+}
+
+class SchedulesObject {
+  private requestHandler: ApiRequestHandler;
+  private uuid: string;
+
+  constructor(requestHandler: ApiRequestHandler, uuid: string) {
+    this.requestHandler = requestHandler;
+    this.uuid = uuid;
+  }
+
+  async getSchedules(): Promise<ServerScheduleList> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules`,
+      method: 'GET',
+    });
+    return endpoint.schedules as ServerScheduleList;
+  }
+
+  async createSchedule(
+    name: string,
+    active: boolean,
+    minute: string,
+    hour: string,
+    dayOfMonth: string,
+    month: string,
+    dayOfWeek: string,
+  ): Promise<ServerSchedule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules`,
+      method: 'POST',
+      data: {
+        name: name,
+        is_active: active,
+        minute: minute,
+        hour: hour,
+        day_of_month: dayOfMonth,
+        month: month,
+        day_of_week: dayOfWeek,
+      },
+    });
+    return endpoint as ServerSchedule;
+  }
+
+  async getSchedule(id: number): Promise<ServerSchedule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules/${id}`,
+      method: 'GET',
+    });
+    return endpoint as ServerSchedule;
+  }
+
+  async updateSchedule(
+    name: string,
+    active: boolean,
+    minute: string,
+    hour: string,
+    dayOfMonth: string,
+    month: string,
+    dayOfWeek: string,
+  ): Promise<ServerSchedule> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules`,
+      method: 'POST',
+      data: {
+        name: name,
+        is_active: active,
+        minute: minute,
+        hour: hour,
+        day_of_month: dayOfMonth,
+        month: month,
+        day_of_week: dayOfWeek,
+      },
+    });
+    return endpoint as ServerSchedule;
+  }
+
+  async deleteSchedule(id: number): Promise<void> {
+    await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules/${id}`,
+      method: 'DELETE',
+    });
+  }
+
+  async executeSchedule(id: number): Promise<void> {
+    await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules/${id}/execute`,
+      method: 'POST',
+    });
+  }
+
+  async createTask(
+    scheduleId: number,
+    action: string,
+    payload: string,
+    timeOffset: number,
+    sequenceId: number,
+    continueOnFailure: boolean,
+  ): Promise<ScheduleTask> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules/${scheduleId}/tasks`,
+      method: 'POST',
+      data: {
+        action: action,
+        payload: payload,
+        time_offset: timeOffset,
+        sequence_id: sequenceId,
+        continue_on_failure: continueOnFailure,
+      },
+    });
+    return endpoint as ScheduleTask;
+  }
+
+  async updateTask(
+    scheduleId: number,
+    taskId: number,
+    action: string,
+    payload: string,
+    timeOffset: number,
+    sequenceId: number,
+    continueOnFailure: boolean,
+  ): Promise<ScheduleTask> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules/${scheduleId}/tasks/${taskId}`,
+      method: 'POST',
+      data: {
+        action: action,
+        payload: payload,
+        time_offset: timeOffset,
+        sequence_id: sequenceId,
+        continue_on_failure: continueOnFailure,
+      },
+    });
+    return endpoint as ScheduleTask;
+  }
+
+  async deleteTask(scheduleId: number, taskId: number): Promise<void> {
+    await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/schedules/${scheduleId}/tasks/${taskId}`,
+      method: 'DELETE',
+    });
+  }
+}
+
+class StartupObject {
+  private requestHandler: ApiRequestHandler;
+  private uuid: string;
+
+  constructor(requestHandler: ApiRequestHandler, uuid: string) {
+    this.requestHandler = requestHandler;
+    this.uuid = uuid;
+  }
+
+  async getVariables(): Promise<EggVariableList> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/startup`,
+      method: 'GET',
+    });
+    return endpoint as EggVariableList;
+  }
+
+  async updateVariable(variable: string, value: string): Promise<EggVariable> {
+    const endpoint = await this.requestHandler.request({
+      url: `/client/servers/${this.uuid}/startup`,
+      method: 'POST',
+      data: { variable: variable, value: value },
+    });
+    return endpoint as EggVariable;
   }
 }
